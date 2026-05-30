@@ -1,2 +1,8 @@
+# Single-package "workspace": pnpm exige `packages` cuando este archivo existe,
+# si no `pnpm install` falla con "packages field missing or empty".
+packages:
+  - "."
+
+# esbuild (lo usa tsx) necesita correr su build script para el binario nativo.
 allowBuilds:
-  esbuild: set this to true or false
+  esbuild: true

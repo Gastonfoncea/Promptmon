@@ -1,0 +1,2 @@
+# Acá aterrizan los .glb del roster pre-generado (PRO-18), bajados por `cd tripo && pnpm roster`.
+# Se sirven en /roster/<slug>.glb. Los .glb generados SÍ se commitean (son la red de seguridad de la demo).

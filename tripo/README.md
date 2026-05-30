@@ -67,6 +67,24 @@ pnpm gen "a small cute dragon"   # genera de verdad (consume ~20 créditos)
 
 El CLI lee `TRIPO_API_KEY` de `../.env.local` (raíz del repo).
 
+## Roster pre-generado (PRO-18)
+
+Set fijo de criaturas para poblar la arena y como red de seguridad de la demo
+(si Tripo/wifi fallan en vivo). Genera cada criatura, **baja el `.glb` a
+`frontend/public/roster/`** (Next lo sirve estático → no expira ni depende de la
+API en vivo) y completa `frontend/src/lib/roster.manifest.json`.
+
+```bash
+pnpm roster          # genera SOLO las que falten (resumible: guarda tras cada una)
+pnpm roster --force  # regenera todas
+```
+
+- Necesita `TRIPO_API_KEY` en `../.env.local`. Genera secuencial (free tier = 1 tarea concurrente); ~45-90s y ~20 créditos por criatura → las 10 tardan un rato.
+- El front consume el roster con `import { roster, readyRoster } from "@/lib/roster"`.
+  `readyRoster` son las que ya tienen `.glb` local.
+- Los `.glb` generados **se commitean** (son el backup). El **mint on-chain** del roster
+  es parte aparte y depende del flujo de Dev3.
+
 ## ⚠️ Notas para el resto del equipo
 
 - **Las URLs `.glb` son presigned y EXPIRAN** (~24h). Para Dev3 (PRO-21) está bien usarlas al vuelo; para el roster de backup (PRO-18) hay que **rehostearlas** o regenerarlas.
