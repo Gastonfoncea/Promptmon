@@ -8,9 +8,9 @@ export const PROMPTMON_ABI = abi;
 /// Monad testnet
 export const MONAD_TESTNET_CHAIN_ID = 10143;
 
-/// Address del contrato desplegado. VACÍA hasta el deploy real:
-/// completar con la salida de `forge script script/Deploy.s.sol --broadcast`.
-export const PROMPTMON_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
+/// Address del contrato desplegado en Monad testnet.
+/// Deploy tx: 0x605297cd7515297143160b8c6016b1e2cc4981a8c419f04430a25a5ec3fafd30 (block 35097963)
+export const PROMPTMON_ADDRESS = "0xB61Dc153eB4B149C5cb6Ed46FD67c62063311932" as const;
 
 /// Stablecoins aceptados (completar con las addresses reales de Monad testnet).
 export const PAYMENT_TOKENS = {
