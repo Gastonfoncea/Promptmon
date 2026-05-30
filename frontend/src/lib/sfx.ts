@@ -35,6 +35,25 @@ export function playWhoosh() {
   osc.onended = () => ac.close();
 }
 
+/** Sirena descendente: en el momento de la conquista. */
+export function playSiren() {
+  const ac = ctx();
+  if (!ac) return;
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  const t0 = ac.currentTime;
+  osc.type = "sawtooth";
+  osc.frequency.setValueAtTime(880, t0);
+  osc.frequency.exponentialRampToValueAtTime(220, t0 + 0.5);
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.22, t0 + 0.05);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.7);
+  osc.connect(gain).connect(ac.destination);
+  osc.start(t0);
+  osc.stop(t0 + 0.75);
+  osc.onended = () => ac.close();
+}
+
 /** Golpe seco de impacto: al aceptar un desafío / iniciar la batalla. */
 export function playImpact() {
   const ac = ctx();
