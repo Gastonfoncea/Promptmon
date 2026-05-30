@@ -82,8 +82,28 @@ pnpm roster --force  # regenera todas
 - Necesita `TRIPO_API_KEY` en `../.env.local`. Genera secuencial (free tier = 1 tarea concurrente); ~45-90s y ~20 créditos por criatura → las 10 tardan un rato.
 - El front consume el roster con `import { roster, readyRoster } from "@/lib/roster"`.
   `readyRoster` son las que ya tienen `.glb` local.
-- Los `.glb` generados **se commitean** (son el backup). El **mint on-chain** del roster
-  es parte aparte y depende del flujo de Dev3.
+- Los `.glb` generados **se commitean** (son el backup).
+
+### Mintear el roster on-chain (PRO-18 parte 2)
+
+Acuña cada criatura del roster en el contrato PromptMon (Monad testnet),
+replicando el flujo de PRO-21 (faucet mUSDC → approve → `mintCreature`) con viem.
+Guarda el `tokenId` en el manifest. Resumible (salta las ya minteadas).
+
+```bash
+pnpm mint-roster
+```
+
+Necesita en `../.env.local`:
+
+| Var | Qué es |
+|-----|--------|
+| `PRIVATE_KEY` | wallet de Monad testnet con MON para gas (**nunca commitear**) |
+| `PUBLIC_BASE_URL` | base del deploy (ej. `https://promptmon.vercel.app`) → mintea `${base}/roster/<slug>.glb`, URL absoluta y permanente |
+| `MONAD_RPC_URL` | (opcional) override del RPC |
+
+Requisitos: haber corrido `pnpm roster` (genera los `.glb`) y tener el front
+deployado (PRO-31) para que la URL on-chain sea válida.
 
 ## ⚠️ Notas para el resto del equipo
 

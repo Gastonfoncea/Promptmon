@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { roster, readyRoster } from "./roster";
+import { roster, readyRoster, mintedRoster } from "./roster";
 
 describe("roster", () => {
   it("tiene entre 8 y 10 criaturas (criterio de PRO-18)", () => {
@@ -20,5 +20,10 @@ describe("roster", () => {
 
   it("readyRoster solo incluye criaturas con .glb hosteado", () => {
     expect(readyRoster.every((c) => c.glb !== null)).toBe(true);
+  });
+
+  it("mintedRoster solo incluye criaturas con tokenId y es subconjunto de readyRoster", () => {
+    expect(mintedRoster.every((c) => c.tokenId != null)).toBe(true);
+    expect(mintedRoster.length).toBeLessThanOrEqual(readyRoster.length);
   });
 });
