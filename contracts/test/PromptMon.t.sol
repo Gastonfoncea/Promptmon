@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {PromptMon} from "../src/PromptMon.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import {MockUSDTNoReturn} from "./mocks/MockUSDTNoReturn.sol";
+import {ReentrantMinter} from "./mocks/ReentrantMinter.sol";
 import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -412,5 +413,21 @@ contract PromptMonTest is Test {
         vm.expectRevert(abi.encodeWithSelector(PromptMon.TokenNotAccepted.selector, address(usdc)));
         pm.mintCreature(GLB, address(usdc));
         vm.stopPrank();
+    }
+
+    // --------------------------- Reentrancy -------------------------------- //
+
+    /// Un receptor malicioso intenta re-entrar mintCreature dentro del callback
+    /// onERC721Received del _safeMint. El guard nonReentrant debe abortar todo.
+    function test_mint_reentrancyIsBlocked() public {
+        ReentrantMinter attacker = new ReentrantMinter(address(pm), address(usdc));
+        usdc.mint(address(attacker), 1_000e6);
+
+        vm.expectRevert(); // ReentrancyGuardReentrantCall (propaga y revierte el mint externo)
+        attacker.attack(GLB);
+
+        // nada se acuñó: el estado quedó intacto
+        assertEq(pm.nextId(), 0);
+        assertEq(usdc.balanceOf(treasury), 0);
     }
 }
