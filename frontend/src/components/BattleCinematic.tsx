@@ -1,7 +1,7 @@
 "use client";
 
 import { Stars, useGLTF } from "@react-three/drei";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Box3, type Group, type Mesh, type PointLight } from "three";
@@ -13,14 +13,17 @@ import type { Creature } from "@/hooks/useMintCreature";
 import {
   BATTLE,
   battleFrame,
+  BLAST_TRAVEL_MS,
   colorFor,
   LOSER_HOLD_X,
+  volleyLunge,
   VOLLEYS,
   WINNER_HOLD_X,
 } from "@/lib/battle";
 import { computeFitTransform } from "@/lib/fitModel";
 import { proxiedModelUrl } from "@/lib/modelUrl";
 import { playSiren } from "@/lib/sfx";
+import { Explosion } from "./Explosion";
 import { ModelErrorBoundary } from "./ModelErrorBoundary";
 import { PowerBlast } from "./PowerBlast";
 
@@ -54,6 +57,39 @@ function useNormalizedGlb(url: string) {
 
 const POWER_Y = 0.3;
 
+interface Impact {
+  at: number;
+  x: number;
+  color: string;
+  power: number;
+}
+
+/** Sacude la cámara en cada impacto, con decaimiento. */
+function CameraShaker({ impacts }: { impacts: Impact[] }) {
+  const { camera } = useThree();
+  const clock = useRef(0);
+  const base = useRef<[number, number, number] | null>(null);
+
+  useFrame((_, delta) => {
+    if (!base.current) {
+      base.current = [camera.position.x, camera.position.y, camera.position.z];
+    }
+    clock.current += delta * 1000;
+    let mag = 0;
+    for (const im of impacts) {
+      const d = clock.current - im.at;
+      if (d >= 0 && d < 220) mag = Math.max(mag, im.power * (1 - d / 220));
+    }
+    const [bx, by, bz] = base.current;
+    camera.position.set(
+      bx + (Math.random() - 0.5) * mag,
+      by + (Math.random() - 0.5) * mag,
+      bz,
+    );
+  });
+  return null;
+}
+
 function BattleScene({
   winnerGlb,
   loserGlb,
@@ -72,21 +108,50 @@ function BattleScene({
   const glow = useRef<PointLight>(null);
   const clock = useRef(0);
 
+  // Cada poder IMPACTA al llegar (atMs + viaje); el golpe final es el más fuerte.
+  const impacts = useMemo<Impact[]>(
+    () => [
+      ...VOLLEYS.map((v) => ({
+        at: v.atMs + BLAST_TRAVEL_MS,
+        x: v.by === "loser" ? WINNER_HOLD_X : LOSER_HOLD_X,
+        color: v.by === "loser" ? loserColor : winnerColor,
+        power: 0.09,
+      })),
+      { at: BATTLE.finalBlowMs, x: LOSER_HOLD_X - 0.6, color: winnerColor, power: 0.34 },
+    ],
+    [winnerColor, loserColor],
+  );
+
   useFrame((_, delta) => {
     clock.current += delta * 1000;
-    const f = battleFrame(clock.current);
+    const t = clock.current;
+    const f = battleFrame(t);
+
+    // Embestidas: el atacante se lanza hacia el enemigo en el momento de tirar.
+    const winnerLunge =
+      VOLLEYS.reduce(
+        (a, v) => (v.by === "winner" ? a + volleyLunge(t, v.atMs) : a),
+        0,
+      ) * -0.7; // hacia la izquierda (al enemigo)
+    const loserLunge =
+      VOLLEYS.reduce(
+        (a, v) => (v.by === "loser" ? a + volleyLunge(t, v.atMs) : a),
+        0,
+      ) * 0.7; // hacia la derecha (al enemigo)
 
     if (winnerWrap.current) {
-      winnerWrap.current.position.set(f.winner.x, f.winner.y, 0);
+      winnerWrap.current.position.set(f.winner.x + winnerLunge, f.winner.y, 0);
       winnerWrap.current.scale.setScalar(f.winner.scale);
       winnerWrap.current.rotation.z = f.winner.tilt;
-      winnerWrap.current.rotation.y += delta * 0.3;
+      // No rota en su eje: las criaturas se encaran, no giran como calesita.
     }
     if (loserWrap.current) {
-      loserWrap.current.position.set(f.loser.x, f.loser.y, 0);
+      loserWrap.current.position.set(f.loser.x + loserLunge, f.loser.y, 0);
       loserWrap.current.scale.setScalar(Math.max(0.001, f.loser.scale));
       loserWrap.current.rotation.z = f.loser.tilt;
-      loserWrap.current.rotation.y += delta * (f.phase === "absorb" ? 6 : 0.3);
+      // Solo gira mientras es absorbido (la "muerte"), no durante la pelea.
+      loserWrap.current.rotation.y =
+        f.phase === "absorb" ? loserWrap.current.rotation.y + delta * 6 : 0;
       setOpacity(loser.object, f.loser.opacity);
     }
     if (glow.current) glow.current.intensity = f.winner.glow * 16;
@@ -131,6 +196,17 @@ function BattleScene({
           />
         );
       })}
+
+      {/* Explosiones en cada impacto + sacudida de cámara */}
+      {impacts.map((im, i) => (
+        <Explosion
+          key={i}
+          atMs={im.at}
+          position={[im.x, POWER_Y, 0]}
+          color={im.color}
+        />
+      ))}
+      <CameraShaker impacts={impacts} />
     </>
   );
 }

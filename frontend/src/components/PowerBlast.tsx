@@ -3,7 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import { type Mesh } from "three";
-import { clamp01 } from "@/lib/battle";
+import { BLAST_TRAVEL_MS, clamp01 } from "@/lib/battle";
 
 interface Props {
   /** Cuándo dispara (ms desde el inicio de la batalla). */
@@ -19,7 +19,13 @@ interface Props {
  * que viaja del atacante al defensor en un arco y pulsa de tamaño. Invisible
  * fuera de su ventana de tiempo. Reloj propio sincronizado al montar con la escena.
  */
-export function PowerBlast({ startMs, durationMs = 550, from, to, color }: Props) {
+export function PowerBlast({
+  startMs,
+  durationMs = BLAST_TRAVEL_MS,
+  from,
+  to,
+  color,
+}: Props) {
   const ref = useRef<Mesh>(null);
   const elapsed = useRef(0);
 
