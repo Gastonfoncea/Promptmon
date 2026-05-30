@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ArenaPanel } from "@/components/ArenaPanel";
+import { Leaderboard } from "@/components/Leaderboard";
 import { WalletStatus } from "@/components/WalletStatus";
 
-export default function ArenaPage() {
+export default function LeaderboardPage() {
   return (
     <main className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between px-6 py-4">
@@ -12,18 +12,18 @@ export default function ArenaPage() {
           <Link href="/" className="text-xl font-bold tracking-tight text-white">
             Prompt<span className="text-[#836EF9]">Mon</span>
           </Link>
-          <span className="text-sm font-medium text-[#a78bfa]">/ arena</span>
           <Link
-            href="/leaderboard"
+            href="/arena"
             className="text-sm font-medium text-white/60 transition hover:text-[#a78bfa]"
           >
-            Leaderboard
+            Arena
           </Link>
+          <span className="text-sm font-medium text-[#a78bfa]">/ leaderboard</span>
         </div>
         <WalletStatus />
       </header>
 
-      <ArenaPanel />
+      <Leaderboard />
     </main>
   );
 }
