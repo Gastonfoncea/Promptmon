@@ -13,6 +13,13 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    rules: {
+      // Regla advisory de performance, no de correctness. La apagamos: usamos
+      // patrones legítimos (guard de hidratación + fetch on-mount/intervalo).
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;
