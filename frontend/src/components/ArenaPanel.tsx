@@ -1,29 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useAccount } from "wagmi";
 import { BattleCinematic } from "./BattleCinematic";
 import { ChallengeCard } from "./ChallengeCard";
-import { CreatureStats } from "./CreatureStats";
-import { playImpact } from "@/lib/sfx";
+import { MyCreatureCard } from "./MyCreatureCard";
 import {
   useArenaActions,
   useMyCreatures,
   useOpenChallenges,
 } from "@/hooks/useArena";
+import { playImpact } from "@/lib/sfx";
 
 export function ArenaPanel() {
   const { address, isConnected } = useAccount();
   const { creatures, refresh: refreshMine } = useMyCreatures();
   const { challenges, refresh: refreshChallenges } = useOpenChallenges();
 
-  // Una criatura propia seleccionada, usada para crear desafío o aceptar.
+  // Una criatura propia seleccionada, usada para abrir desafío o aceptar.
   const [selectedId, setSelectedId] = useState<bigint | null>(null);
 
   const actions = useArenaActions(() => {
     refreshMine();
     refreshChallenges();
   });
+
+  // Ids de mis criaturas que ya están en un desafío abierto (lockeadas).
+  const lockedIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const ch of challenges) {
+      if (ch.challenger.toLowerCase() === address?.toLowerCase()) {
+        set.add(ch.creatureId.toString());
+      }
+    }
+    return set;
+  }, [challenges, address]);
 
   if (!isConnected) {
     return (
@@ -34,10 +46,14 @@ export function ArenaPanel() {
   }
 
   const selected = creatures.find((c) => c.id === selectedId) ?? null;
+  const selectedLocked = selected
+    ? lockedIds.has(selected.id.toString())
+    : false;
+  const canUseSelected = Boolean(selected) && !selectedLocked;
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 p-6">
-      {/* Secuencia de batalla cinematográfica a pantalla completa (PRO-32) */}
+      {/* Batalla cinematográfica a pantalla completa */}
       {actions.lastBattle && (
         <BattleCinematic
           outcome={actions.lastBattle}
@@ -45,52 +61,61 @@ export function ArenaPanel() {
         />
       )}
 
-      {/* Mis criaturas + crear desafío */}
+      {/* Guía rápida */}
+      <p className="text-sm text-white/50">
+        <span className="font-semibold text-white/80">1.</span> Elegí una criatura
+        tuya · <span className="font-semibold text-white/80">2.</span> abrí un
+        desafío o aceptá uno abierto.
+      </p>
+
+      {/* Tus criaturas */}
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-white/60">
-          Tus criaturas
+          Tus criaturas ({creatures.length})
         </h2>
+
         {creatures.length === 0 ? (
-          <p className="text-sm text-white/40">
-            No tenés criaturas todavía. Generá y minteá una primero.
-          </p>
+          <div className="flex flex-col items-start gap-3 rounded-2xl border border-white/10 p-6">
+            <p className="text-sm text-white/50">
+              Todavía no tenés criaturas. Creá la primera para entrar a la arena.
+            </p>
+            <Link
+              href="/create"
+              className="rounded-xl bg-[#836EF9] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6f5be0]"
+            >
+              Crea tu personaje →
+            </Link>
+          </div>
         ) : (
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {creatures.map((c) => (
-              <button
+              <MyCreatureCard
                 key={c.id.toString()}
-                type="button"
-                onClick={() => setSelectedId(c.id)}
-                className={`w-40 rounded-xl border p-3 text-left transition ${
-                  selectedId === c.id
-                    ? "border-[#836EF9] bg-[#836EF9]/10"
-                    : "border-white/10 hover:border-white/30"
-                }`}
-              >
-                <div className="mb-2 text-sm font-semibold text-white">
-                  #{c.id.toString()}
-                  <span className="ml-2 text-[11px] font-normal text-white/40">
-                    lvl {c.level} · {c.wins}w
-                  </span>
-                </div>
-                <CreatureStats creature={c} />
-              </button>
+                creature={c}
+                selected={selectedId === c.id}
+                locked={lockedIds.has(c.id.toString())}
+                onSelect={() => setSelectedId(c.id)}
+              />
             ))}
           </div>
         )}
 
-        <button
-          type="button"
-          disabled={!selected || actions.busy === "create"}
-          onClick={() => selected && actions.createChallenge(selected.id)}
-          className="mt-4 rounded-xl bg-[#836EF9] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6f5be0] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {actions.busy === "create"
-            ? "Creando desafío…"
-            : selected
-              ? `Abrir desafío con #${selected.id.toString()}`
-              : "Elegí una criatura para desafiar"}
-        </button>
+        {creatures.length > 0 && (
+          <button
+            type="button"
+            disabled={!canUseSelected || actions.busy === "create"}
+            onClick={() => selected && actions.createChallenge(selected.id)}
+            className="mt-4 rounded-xl bg-[#836EF9] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6f5be0] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {actions.busy === "create"
+              ? "Creando desafío…"
+              : !selected
+                ? "Elegí una criatura para desafiar"
+                : selectedLocked
+                  ? "Esa criatura ya está en un desafío"
+                  : `Abrir desafío con #${selected.id.toString()}`}
+          </button>
+        )}
       </section>
 
       {/* Desafíos abiertos */}
@@ -112,14 +137,14 @@ export function ArenaPanel() {
                   key={ch.cid.toString()}
                   challenge={ch}
                   isMine={isMine}
-                  canAccept={Boolean(selected)}
+                  canAccept={canUseSelected}
                   busy={
                     actions.busy === `accept:${ch.cid}` ||
                     actions.busy === `cancel:${ch.cid}`
                   }
                   onAccept={() => {
-                    if (!selected) return;
-                    playImpact(); // SFX: golpe al iniciar la batalla (PRO-25)
+                    if (!canUseSelected || !selected) return;
+                    playImpact();
                     actions.acceptChallenge(ch.cid, selected.id);
                   }}
                   onCancel={() => actions.cancelChallenge(ch.cid)}
