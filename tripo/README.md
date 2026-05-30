@@ -1,0 +1,74 @@
+# @promptmon/tripo
+
+Cliente de [Tripo](https://platform.tripo3d.ai) para PromptMon. Convierte un prompt de texto en un modelo 3D `.glb`. **(PRO-14)**
+
+## API pública
+
+```ts
+import { generateCreature } from "@promptmon/tripo";
+
+// prompt → URL del .glb (la firma que pide PRO-14)
+const glbUrl = await generateCreature("a fire-breathing armored lizard");
+```
+
+Variantes:
+
+```ts
+import { generateCreatureDetailed, TripoClient } from "@promptmon/tripo";
+
+// detalle completo: { glbUrl, renderedImageUrl, taskId, consumedCredit }
+const creature = await generateCreatureDetailed(prompt, {
+  timeoutMs: 240_000,        // default 4 min
+  pollIntervalMs: 3_000,     // default 3s
+  onProgress: (p, status) => console.log(status, p),
+  signal: abortController.signal, // cancelable
+});
+
+// o el cliente reutilizable (1 sola lectura de la key)
+const client = new TripoClient({ apiKey: process.env.TRIPO_API_KEY });
+const taskId = await client.createTextToModelTask(prompt);
+const result = await client.waitForCompletion(taskId);
+```
+
+## Configuración
+
+Lee del entorno por default (o pasá `{ apiKey, baseUrl }`):
+
+| Variable | Default | Qué es |
+|----------|---------|--------|
+| `TRIPO_API_KEY` | — (requerida) | API key `tsk_...` |
+| `TRIPO_API_BASE` | `https://api.tripo3d.ai/v2/openapi` | Base de la API |
+
+## Errores (todos extienden `TripoError`)
+
+| Clase | Cuándo |
+|-------|--------|
+| `TripoApiError` | La API respondió `code !== 0` (sin crédito, key inválida, etc.). Trae `.code` y `.suggestion`. |
+| `TripoTaskFailedError` | La generación terminó en `failed`/`banned`/`expired`/`cancelled`. |
+| `TripoTimeoutError` | Se agotó el `timeoutMs` sin terminar. |
+
+```ts
+import { generateCreature, TripoApiError } from "@promptmon/tripo";
+try {
+  await generateCreature(prompt);
+} catch (e) {
+  if (e instanceof TripoApiError && e.code === 2010) {
+    // sin crédito → mostrar mensaje al usuario
+  }
+}
+```
+
+## Probar localmente
+
+```bash
+pnpm install
+pnpm gen "a small cute dragon"   # genera de verdad (consume ~20 créditos)
+```
+
+El CLI lee `TRIPO_API_KEY` de `../.env.local` (raíz del repo).
+
+## ⚠️ Notas para el resto del equipo
+
+- **Las URLs `.glb` son presigned y EXPIRAN** (~24h). Para Dev3 (PRO-21) está bien usarlas al vuelo; para el roster de backup (PRO-18) hay que **rehostearlas** o regenerarlas.
+- **Free tier = 1 tarea concurrente.** Generar de a una. Para roster/demo en paralelo, evaluar plan pago.
+- Una generación tarda **~45-90s** y cuesta **~20 créditos**.
