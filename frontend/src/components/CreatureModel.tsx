@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import { Box3, type Group, type Mesh, type PointLight } from "three";
 import { computeFitTransform } from "@/lib/fitModel";
+import { proxiedModelUrl } from "@/lib/modelUrl";
 import {
   spawnState,
   SPAWN_DURATION_MS,
@@ -34,7 +35,8 @@ function setOpacity(object: Group, opacity: number, transparent: boolean) {
  * Luz base / entorno / auto-rotación los aporta <CreatureCanvas> (PRO-19).
  */
 export function CreatureModel({ glbUrl }: { glbUrl: string }) {
-  const { scene } = useGLTF(glbUrl);
+  // Ruteamos por /api/model para esquivar el CORS del CDN de Tripo.
+  const { scene } = useGLTF(proxiedModelUrl(glbUrl));
 
   const spawnRef = useRef<Group>(null);
   const glowRef = useRef<PointLight>(null);

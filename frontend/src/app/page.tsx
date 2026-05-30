@@ -5,6 +5,7 @@ import { useState } from "react";
 import { CreatureCanvas } from "@/components/CreatureCanvas";
 import { CreatureModel } from "@/components/CreatureModel";
 import { MintPanel } from "@/components/MintPanel";
+import { ModelErrorBoundary } from "@/components/ModelErrorBoundary";
 import { PromptInput } from "@/components/PromptInput";
 import { WalletStatus } from "@/components/WalletStatus";
 import { playWhoosh } from "@/lib/sfx";
@@ -56,7 +57,11 @@ export default function Home() {
         {/* Canvas R3F (PRO-19). La criatura generada (PRO-16) se monta adentro. */}
         <CreatureCanvas effects>
           {/* key={glbUrl}: cada criatura nueva remonta y reinicia la animación de nacimiento (PRO-17). */}
-          {glbUrl && <CreatureModel key={glbUrl} glbUrl={glbUrl} />}
+          {glbUrl && (
+            <ModelErrorBoundary key={glbUrl}>
+              <CreatureModel glbUrl={glbUrl} />
+            </ModelErrorBoundary>
+          )}
         </CreatureCanvas>
 
         {/* Overlay: input de prompt (PRO-15) abajo, centrado sobre el canvas. */}
