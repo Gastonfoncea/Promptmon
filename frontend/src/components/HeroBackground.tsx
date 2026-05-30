@@ -4,33 +4,48 @@ import { Icosahedron, MeshDistortMaterial, Stars } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { useRef } from "react";
-import { type Mesh } from "three";
+import { type Group, type Mesh } from "three";
 
-/** Núcleo de energía: un icosaedro distorsionado que "respira" y gira — la
- *  criatura antes de nacer. Self-contained (no depende de ningún .glb externo). */
+/** Campo de estrellas que DERIVA de fondo (rotación lenta + twinkle). */
+function Starfield() {
+  const ref = useRef<Group>(null);
+  useFrame((_, delta) => {
+    if (ref.current) {
+      ref.current.rotation.y += delta * 0.025;
+      ref.current.rotation.x += delta * 0.008;
+    }
+  });
+  return (
+    <group ref={ref}>
+      <Stars radius={80} depth={60} count={4500} factor={4} fade speed={1.2} />
+    </group>
+  );
+}
+
+/** Núcleo de energía centrado y empujado atrás, como halo detrás del texto. */
 function EnergyCore() {
   const ref = useRef<Mesh>(null);
   useFrame((_, delta) => {
     if (!ref.current) return;
-    ref.current.rotation.y += delta * 0.25;
-    ref.current.rotation.x += delta * 0.06;
+    ref.current.rotation.y += delta * 0.22;
+    ref.current.rotation.x += delta * 0.05;
   });
   return (
-    <Icosahedron ref={ref} args={[1.7, 12]} position={[2.2, 0.2, 0]}>
+    <Icosahedron ref={ref} args={[2.1, 12]} position={[0, -0.2, -1.6]}>
       <MeshDistortMaterial
         color="#836EF9"
         emissive="#6d4be0"
-        emissiveIntensity={0.7}
-        distort={0.42}
-        speed={1.6}
-        roughness={0.15}
+        emissiveIntensity={0.45}
+        distort={0.4}
+        speed={1.5}
+        roughness={0.2}
         metalness={0.2}
       />
     </Icosahedron>
   );
 }
 
-/** Fondo 3D atmosférico del hero de la landing (PRO-landing). */
+/** Fondo 3D atmosférico del hero. */
 export function HeroBackground() {
   return (
     <Canvas
@@ -42,12 +57,12 @@ export function HeroBackground() {
       <ambientLight intensity={0.5} />
       <pointLight position={[4, 3, 3]} intensity={3} color="#a78bfa" />
       <pointLight position={[-3, -2, 2]} intensity={1.5} color="#5b3fd6" />
-      <Stars radius={70} depth={50} count={3500} factor={4} fade speed={0.4} />
+      <Starfield />
       <EnergyCore />
       <EffectComposer>
         <Bloom
-          intensity={1.4}
-          luminanceThreshold={0.1}
+          intensity={1.2}
+          luminanceThreshold={0.15}
           luminanceSmoothing={0.9}
           mipmapBlur
         />
