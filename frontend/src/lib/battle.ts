@@ -17,7 +17,10 @@ export const WINNER_HOLD_X = 1.8;
 export const LOSER_HOLD_X = -1.8;
 const OFFSCREEN = 5;
 /** A dónde queda el perdedor tras el golpe final (de ahí arranca la absorción). */
-const LOSER_KNOCKED_X = LOSER_HOLD_X - 0.8;
+const LOSER_KNOCKED_X = LOSER_HOLD_X - 1.3;
+
+/** Tiempo de viaje de un poder (ms). Compartido con PowerBlast: define cuándo IMPACTA. */
+export const BLAST_TRAVEL_MS = 550;
 
 export function clamp01(x: number): number {
   return x < 0 ? 0 : x > 1 ? 1 : x;
@@ -27,6 +30,17 @@ export function lerp(a: number, b: number, t: number): number {
 }
 export function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+/**
+ * Embestida: bump 0→1→0 alrededor del momento `atMs` en que el atacante dispara.
+ * El que tira el poder se lanza hacia adelante y vuelve. Ventana ±200ms.
+ */
+export function volleyLunge(t: number, atMs: number): number {
+  const dist = Math.abs(t - atMs);
+  const window = 200;
+  if (dist > window) return 0;
+  return Math.cos((dist / window) * (Math.PI / 2)); // 1 en atMs → 0 en los bordes
 }
 
 /** Color determinístico por id (mismo bicho → mismo color). Ángulo áureo = bien separados. */
@@ -96,8 +110,8 @@ export function battleFrame(t: number): BattleFrame {
     );
     return {
       phase: "final",
-      winner: { x: WINNER_HOLD_X - 0.5 * p, y: 0, scale: 1 + 0.08 * p, opacity: 1, tilt: -0.1 * p, glow: 0.3 * p },
-      loser: { x: lerp(LOSER_HOLD_X, LOSER_KNOCKED_X, p), y: 0, scale: 1, opacity: 1, tilt: 0.5 * p },
+      winner: { x: WINNER_HOLD_X - 0.9 * p, y: 0, scale: 1 + 0.1 * p, opacity: 1, tilt: -0.12 * p, glow: 0.3 * p },
+      loser: { x: lerp(LOSER_HOLD_X, LOSER_KNOCKED_X, p), y: 0, scale: 1, opacity: 1, tilt: 0.6 * p },
       impact: false,
     };
   }

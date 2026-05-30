@@ -6,6 +6,7 @@ import {
   colorFor,
   easeInOutCubic,
   lerp,
+  volleyLunge,
 } from "./battle";
 
 describe("helpers", () => {
@@ -15,6 +16,19 @@ describe("helpers", () => {
     expect(lerp(0, 10, 0.5)).toBe(5);
     expect(easeInOutCubic(0)).toBe(0);
     expect(easeInOutCubic(1)).toBe(1);
+  });
+});
+
+describe("volleyLunge", () => {
+  it("es máximo (1) en el momento del disparo y 0 fuera de la ventana", () => {
+    expect(volleyLunge(1500, 1500)).toBeCloseTo(1, 5);
+    expect(volleyLunge(1500, 2000)).toBe(0); // 500ms > ventana 200
+    expect(volleyLunge(2000, 1500)).toBe(0);
+  });
+  it("decae suave dentro de la ventana", () => {
+    const v = volleyLunge(1600, 1500); // 100ms del centro
+    expect(v).toBeGreaterThan(0);
+    expect(v).toBeLessThan(1);
   });
 });
 
