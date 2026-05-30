@@ -5,11 +5,15 @@ import { CreatureCanvas } from "@/components/CreatureCanvas";
 import { CreatureModel } from "@/components/CreatureModel";
 import { PromptInput } from "@/components/PromptInput";
 import { WalletStatus } from "@/components/WalletStatus";
+import { MintFlow } from "@/components/MintFlow";
+import { Arena } from "@/components/Arena";
+import { Leaderboard } from "@/components/Leaderboard";
+
+type Tab = "mint" | "arena" | "leaderboard";
 
 export default function Home() {
-  // glbUrl de la última criatura generada. Por ahora solo lo mostramos;
-  // PRO-16 lo va a tomar para montar <CreatureModel glbUrl={...}/> en el canvas.
   const [glbUrl, setGlbUrl] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("mint");
 
   async function handleGenerate(prompt: string) {
     const res = await fetch("/api/generate", {
@@ -22,7 +26,6 @@ export default function Home() {
       throw new Error(data.error ?? "Falló la generación");
     }
     setGlbUrl(data.glbUrl);
-    // TODO(PRO-16): pasar glbUrl a <CreatureModel> dentro de <CreatureCanvas>.
   }
 
   return (
@@ -34,30 +37,43 @@ export default function Home() {
         <WalletStatus />
       </header>
 
-      <section className="relative flex-1">
-        {/* Canvas R3F (PRO-19). La criatura generada (PRO-16) se monta adentro. */}
-        <CreatureCanvas>
-          {/* key={glbUrl}: cada criatura nueva remonta y reinicia la animación de nacimiento (PRO-17). */}
-          {glbUrl && <CreatureModel key={glbUrl} glbUrl={glbUrl} />}
-        </CreatureCanvas>
-
-        {/* Overlay: input de prompt (PRO-15) abajo, centrado sobre el canvas. */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 p-6">
-          {glbUrl && (
-            <a
-              href={glbUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="pointer-events-auto rounded-full bg-white/10 px-4 py-1 text-xs text-white/70 hover:bg-white/20"
-            >
-              ✅ criatura generada — ver .glb
-            </a>
-          )}
-          <div className="pointer-events-auto w-full max-w-xl">
-            <PromptInput onGenerate={handleGenerate} />
+      <div className="grid flex-1 grid-cols-1 gap-4 p-4 lg:grid-cols-2">
+        {/* Columna izquierda: canvas 3D + prompt */}
+        <section className="relative min-h-[50vh] overflow-hidden rounded-2xl border border-white/10">
+          <CreatureCanvas>
+            {glbUrl && <CreatureModel key={glbUrl} glbUrl={glbUrl} />}
+          </CreatureCanvas>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 p-4">
+            <div className="pointer-events-auto w-full max-w-xl">
+              <PromptInput onGenerate={handleGenerate} />
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Columna derecha: flujos on-chain con tabs */}
+        <section className="flex flex-col gap-3">
+          <nav className="flex gap-2">
+            {(["mint", "arena", "leaderboard"] as Tab[]).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTab(t)}
+                className={`rounded-lg px-4 py-2 text-sm font-medium capitalize ${
+                  tab === t
+                    ? "bg-[#836EF9] text-white"
+                    : "bg-white/5 text-white/60 hover:bg-white/10"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </nav>
+
+          {tab === "mint" && <MintFlow glbUrl={glbUrl} />}
+          {tab === "arena" && <Arena />}
+          {tab === "leaderboard" && <Leaderboard />}
+        </section>
+      </div>
     </main>
   );
 }
