@@ -3,20 +3,22 @@ pragma solidity 0.8.34;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /// @title PromptMon
 /// @notice Juego on-chain en Monad testnet. El contrato de juego ES el ERC-721:
-///         las criaturas no son una colección aparte. El mint se paga en
-///         stablecoins (USDC/USDT/etc.) por el valor de ~10 USDC y la fee va a
-///         una wallet treasury. Las batallas usan ownership interno + un flag de
-///         lock (sin escrow externo): el desafío lockea la criatura del retador,
-///         y al aceptar se resuelve y se transfiere el NFT perdedor al ganador
-///         en la misma transacción.
+///         las criaturas no son una colección aparte. El mint es gratis y el
+///         jugador REPARTE un pool fijo de 100 puntos entre ATK/DEF/HP/SPD
+///         (mín 5 por stat), así hay estrategia pero nadie supera el total de
+///         100 (anti "dios invencible"). Las batallas usan ownership interno +
+///         un flag de lock (sin escrow externo): el desafío lockea la criatura
+///         del retador, y al aceptar se resuelve y se transfiere el NFT perdedor
+///         al ganador en la misma transacción.
 contract PromptMon is ERC721, Ownable, ReentrancyGuard {
-    using SafeERC20 for IERC20;
+    /// @notice Pool total de puntos a repartir entre las stats.
+    uint16 public constant STAT_TOTAL = 100;
+    /// @notice Mínimo por stat (no podés dejar una en 0).
+    uint16 public constant STAT_MIN = 5;
 
     struct Creature {
         uint16 atk;
@@ -41,15 +43,14 @@ contract PromptMon is ERC721, Ownable, ReentrancyGuard {
         address challenger;
     }
 
-    /// @notice Próximo id a acuñar (también es el total acuñado).
-    uint256 public nextId;
+    /// @notice Tarifa de acuñación en MON nativo.
+    uint256 public constant MINT_FEE = 0.1 ether;
 
     /// @notice Wallet que recibe las fees del mint.
     address public treasury;
 
-    /// @notice Precio del mint por stablecoin aceptado. 0 = token no aceptado.
-    ///         En unidades mínimas del token (p.ej. 10 USDC = 10_000_000).
-    mapping(address token => uint256 amount) public mintPrice;
+    /// @notice Próximo id a acuñar (también es el total acuñado).
+    uint256 public nextId;
 
     /// @notice Una criatura locked no se puede transferir, ni abrir/aceptar otro
     ///         desafío con ella, mientras espera rival.
@@ -65,18 +66,19 @@ contract PromptMon is ERC721, Ownable, ReentrancyGuard {
     event BattleResult(
         uint256 indexed winnerId, uint256 indexed loserId, address winner, address loser
     );
-    event PaymentTokenSet(address indexed token, uint256 amount);
     event TreasurySet(address indexed treasury);
 
     error InvalidTreasury();
     error EmptyGlbUrl();
-    error TokenNotAccepted(address token);
+    error BadStatTotal(uint256 sum); // la suma no da STAT_TOTAL
+    error StatBelowMin(); // alguna stat < STAT_MIN
+    error WrongFee(uint256 sent, uint256 required);
+    error FeeTransferFailed();
     error NotCreatureOwner(uint256 id);
     error CreatureLocked(uint256 id);
     error ChallengeNotOpen(uint256 cid);
     error InvalidChallenge(uint256 cid);
     error SelfBattle();
-    error NonexistentCreature(uint256 id);
 
     constructor(address initialOwner, address treasury_)
         ERC721("PromptMon", "PMON")
@@ -87,64 +89,51 @@ contract PromptMon is ERC721, Ownable, ReentrancyGuard {
         emit TreasurySet(treasury_);
     }
 
-    // --------------------------------------------------------------------- //
-    //                              Admin (owner)                            //
-    // --------------------------------------------------------------------- //
-
-    /// @notice Actualiza la wallet de tesorería que recibe las fees.
+    /// @notice Actualiza la wallet que recibe las fees del mint.
     function setTreasury(address treasury_) external onlyOwner {
         if (treasury_ == address(0)) revert InvalidTreasury();
         treasury = treasury_;
         emit TreasurySet(treasury_);
     }
 
-    /// @notice Habilita/ajusta un stablecoin de pago. `amount` en unidades
-    ///         mínimas del token (p.ej. 10 USDC con 6 decimales = 10_000_000).
-    ///         `amount = 0` deshabilita el token.
-    function setPaymentToken(address token, uint256 amount) external onlyOwner {
-        if (token == address(0)) revert TokenNotAccepted(token);
-        mintPrice[token] = amount;
-        emit PaymentTokenSet(token, amount);
-    }
-
     // --------------------------------------------------------------------- //
     //                                 Mint                                  //
     // --------------------------------------------------------------------- //
 
-    /// @notice Acuña una criatura pagando con el stablecoin `payToken`.
-    ///         Stats anti "dios invencible": pool fijo de ~100 pts repartido por
-    ///         hash, así el prompt es solo estética y nadie puede gamear el poder.
-    /// @param glbUrl   URL del modelo 3D generado por el prompt.
-    /// @param payToken Stablecoin de pago (debe estar habilitado por el owner).
+    /// @notice Acuña una criatura pagando MINT_FEE (0.1 MON) con stats elegidas
+    ///         por el jugador. La suma de atk+def+hp+spd debe ser exactamente
+    ///         STAT_TOTAL (100) y cada stat >= STAT_MIN (5). Así hay estrategia
+    ///         sin "dios invencible". La fee se reenvía a la treasury.
+    /// @param glbUrl URL del modelo 3D generado por el prompt.
+    /// @param atk Ataque.
+    /// @param def Defensa.
+    /// @param hp Vida.
+    /// @param spd Velocidad.
     /// @return id Id de la criatura acuñada.
-    function mintCreature(string calldata glbUrl, address payToken)
+    function mintCreature(string calldata glbUrl, uint16 atk, uint16 def, uint16 hp, uint16 spd)
         external
+        payable
         nonReentrant
         returns (uint256 id)
     {
+        if (msg.value != MINT_FEE) revert WrongFee(msg.value, MINT_FEE);
         if (bytes(glbUrl).length == 0) revert EmptyGlbUrl();
-
-        uint256 price = mintPrice[payToken];
-        if (price == 0) revert TokenNotAccepted(payToken);
+        if (atk < STAT_MIN || def < STAT_MIN || hp < STAT_MIN || spd < STAT_MIN) {
+            revert StatBelowMin();
+        }
+        uint256 sum = uint256(atk) + def + hp + spd;
+        if (sum != STAT_TOTAL) revert BadStatTotal(sum);
 
         id = nextId++;
-
-        // Reparto de stats desde el hash. Total == 100 salvo cuando aplica el
-        // piso de SPD (sum de atk+def+hp > 95), documentado como tolerancia.
-        uint256 h = uint256(keccak256(abi.encodePacked(id, msg.sender, glbUrl, block.timestamp)));
-        uint16 atk = uint16(h % 40 + 10); // 10..49
-        uint16 def = uint16((h >> 16) % 40 + 10); // 10..49
-        uint16 hp = uint16((h >> 32) % 40 + 10); // 10..49
-        uint256 sum = uint256(atk) + def + hp;
-        uint16 spd = sum + 5 <= 100 ? uint16(100 - sum) : 5; // piso de 5
-
-        _creatures[id] = Creature({atk: atk, def: def, hp: hp, spd: spd, level: 1, wins: 0, glb: glbUrl});
+        _creatures[id] =
+            Creature({atk: atk, def: def, hp: hp, spd: spd, level: 1, wins: 0, glb: glbUrl});
 
         _safeMint(msg.sender, id);
         emit CreatureMinted(id, msg.sender, glbUrl);
 
-        // Interacción: cobrar y reenviar a tesorería (SafeERC20 soporta USDT real).
-        IERC20(payToken).safeTransferFrom(msg.sender, treasury, price);
+        // Interacción: reenviar la fee a treasury (CEI + nonReentrant).
+        (bool ok,) = treasury.call{value: msg.value}("");
+        if (!ok) revert FeeTransferFailed();
     }
 
     // --------------------------------------------------------------------- //
@@ -226,8 +215,9 @@ contract PromptMon is ERC721, Ownable, ReentrancyGuard {
 
     function _power(uint256 id, uint256 rand) internal view returns (uint256) {
         Creature storage c = _creatures[id];
-        uint256 base = (uint256(c.atk) * 12 + uint256(c.spd) * 11 + uint256(c.def) * 10
-            + uint256(c.hp) * 9) / 10;
+        uint256 base = (
+            uint256(c.atk) * 12 + uint256(c.spd) * 11 + uint256(c.def) * 10 + uint256(c.hp) * 9
+        ) / 10;
         return base + uint256(c.level) * 5 + (rand % 20);
     }
 
@@ -254,13 +244,11 @@ contract PromptMon is ERC721, Ownable, ReentrancyGuard {
     //                                Views                                  //
     // --------------------------------------------------------------------- //
 
-    /// @notice Devuelve la criatura `id`. Revierte si no existe.
     function getCreature(uint256 id) external view returns (Creature memory) {
         _requireOwned(id);
         return _creatures[id];
     }
 
-    /// @notice Lista todos los desafíos abiertos (patrón simple para la demo).
     function getOpenChallenges() external view returns (OpenChallenge[] memory open) {
         uint256 total = challenges.length;
         uint256 count;
@@ -272,12 +260,12 @@ contract PromptMon is ERC721, Ownable, ReentrancyGuard {
         for (uint256 i; i < total; ++i) {
             Challenge storage c = challenges[i];
             if (c.open) {
-                open[j++] = OpenChallenge({cid: i, creatureId: c.creatureId, challenger: c.challenger});
+                open[j++] =
+                    OpenChallenge({cid: i, creatureId: c.creatureId, challenger: c.challenger});
             }
         }
     }
 
-    /// @notice Cantidad total de desafíos creados (abiertos + cerrados).
     function challengeCount() external view returns (uint256) {
         return challenges.length;
     }
