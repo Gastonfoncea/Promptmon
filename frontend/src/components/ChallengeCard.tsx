@@ -13,25 +13,25 @@ function short(addr: string): string {
 interface Props {
   challenge: OpenChallenge;
   isMine: boolean;
-  /** Hay una criatura propia seleccionada para aceptar. */
-  canAccept: boolean;
+  /** Elegido como rival (para la barra de matchup). */
+  selected: boolean;
   busy: boolean;
-  onAccept: () => void;
+  onSelect: () => void;
   onCancel: () => void;
 }
 
 export function ChallengeCard({
   challenge,
   isMine,
-  canAccept,
+  selected,
   busy,
-  onAccept,
+  onSelect,
   onCancel,
 }: Props) {
   const { creature, challenger, creatureId } = challenge;
 
-  return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-[#140d28]/80 p-3">
+  const body = (
+    <>
       <div className="h-40 overflow-hidden rounded-xl bg-black/30">
         <CreatureCanvas>
           <ModelErrorBoundary key={creature.glb}>
@@ -54,8 +54,14 @@ export function ChallengeCard({
       <div className="text-[11px] text-white/40">
         retador: {isMine ? "vos" : short(challenger)}
       </div>
+    </>
+  );
 
-      {isMine ? (
+  // Desafío propio: no es rival, se puede cancelar.
+  if (isMine) {
+    return (
+      <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-[#140d28]/80 p-3">
+        {body}
         <button
           type="button"
           onClick={onCancel}
@@ -64,17 +70,29 @@ export function ChallengeCard({
         >
           {busy ? "Cancelando…" : "Cancelar desafío"}
         </button>
-      ) : (
-        <button
-          type="button"
-          onClick={onAccept}
-          disabled={busy || !canAccept}
-          className="rounded-lg bg-[#836EF9] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#6f5be0] disabled:cursor-not-allowed disabled:opacity-50"
-          title={canAccept ? "" : "Elegí una criatura tuya para pelear"}
-        >
-          {busy ? "Peleando…" : "Aceptar y pelear"}
-        </button>
-      )}
-    </div>
+      </div>
+    );
+  }
+
+  // Desafío ajeno: clic = elegirlo como rival (la pelea se dispara desde la barra).
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`flex flex-col gap-3 rounded-2xl border p-3 text-left transition ${
+        selected
+          ? "border-[#836EF9] bg-[#836EF9]/10 ring-2 ring-[#836EF9]/40"
+          : "border-white/10 bg-[#140d28]/80 hover:border-white/25"
+      }`}
+    >
+      {body}
+      <span
+        className={`text-center text-[11px] font-semibold ${
+          selected ? "text-[#a78bfa]" : "text-white/40"
+        }`}
+      >
+        {selected ? "✓ rival elegido" : "elegir como rival"}
+      </span>
+    </button>
   );
 }

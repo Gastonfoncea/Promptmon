@@ -6,6 +6,7 @@ import { useAccount } from "wagmi";
 import { AllocatePanel } from "./AllocatePanel";
 import { BattleCinematic } from "./BattleCinematic";
 import { ChallengeCard } from "./ChallengeCard";
+import { MatchupBar } from "./MatchupBar";
 import { MyCreatureCard } from "./MyCreatureCard";
 import {
   useArenaActions,
@@ -19,8 +20,9 @@ export function ArenaPanel() {
   const { creatures, refresh: refreshMine } = useMyCreatures();
   const { challenges, refresh: refreshChallenges } = useOpenChallenges();
 
-  // Una criatura propia seleccionada, usada para abrir desafío o aceptar.
+  // Tu criatura elegida y el desafío rival elegido (el matchup de la barra).
   const [selectedId, setSelectedId] = useState<bigint | null>(null);
+  const [targetCid, setTargetCid] = useState<bigint | null>(null);
 
   const actions = useArenaActions(() => {
     refreshMine();
@@ -52,6 +54,14 @@ export function ArenaPanel() {
     : false;
   const canUseSelected = Boolean(selected) && !selectedLocked;
 
+  // El rival: el desafío elegido, siempre que sea de otro (no peleás contra vos).
+  const opponent =
+    challenges.find(
+      (ch) =>
+        ch.cid === targetCid &&
+        ch.challenger.toLowerCase() !== address?.toLowerCase(),
+    ) ?? null;
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 p-6">
       {/* Batalla cinematográfica a pantalla completa */}
@@ -62,17 +72,29 @@ export function ArenaPanel() {
         />
       )}
 
-      {/* Guía rápida */}
-      <p className="text-sm text-white/50">
-        <span className="font-semibold text-white/80">1.</span> Elegí una criatura
-        tuya · <span className="font-semibold text-white/80">2.</span> abrí un
-        desafío o aceptá uno abierto.
-      </p>
+      {/* Barra de matchup: el partido siempre a la vista */}
+      <MatchupBar
+        myCreature={selected}
+        myLocked={selectedLocked}
+        opponent={opponent}
+        busyFight={
+          opponent ? actions.busy === `accept:${opponent.cid}` : false
+        }
+        busyCreate={actions.busy === "create"}
+        onFight={() => {
+          if (!selected || !opponent || !canUseSelected) return;
+          playImpact();
+          actions.acceptChallenge(opponent.cid, selected.id);
+        }}
+        onCreate={() => {
+          if (selected && canUseSelected) actions.createChallenge(selected.id);
+        }}
+      />
 
       {/* Tus criaturas */}
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-white/60">
-          Tus criaturas ({creatures.length})
+          Tus criaturas ({creatures.length}) — elegí una
         </h2>
 
         {creatures.length === 0 ? (
@@ -111,33 +133,16 @@ export function ArenaPanel() {
             }
           />
         )}
-
-        {creatures.length > 0 && (
-          <button
-            type="button"
-            disabled={!canUseSelected || actions.busy === "create"}
-            onClick={() => selected && actions.createChallenge(selected.id)}
-            className="mt-4 rounded-xl bg-[#836EF9] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6f5be0] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {actions.busy === "create"
-              ? "Creando desafío…"
-              : !selected
-                ? "Elegí una criatura para desafiar"
-                : selectedLocked
-                  ? "Esa criatura ya está en un desafío"
-                  : `Abrir desafío con #${selected.id.toString()}`}
-          </button>
-        )}
       </section>
 
       {/* Desafíos abiertos */}
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-white/60">
-          Desafíos abiertos ({challenges.length})
+          Desafíos abiertos ({challenges.length}) — elegí un rival
         </h2>
         {challenges.length === 0 ? (
           <p className="text-sm text-white/40">
-            No hay desafíos abiertos. Abrí el primero 👆
+            No hay desafíos abiertos. Elegí una criatura y abrí el primero 👆
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -149,16 +154,9 @@ export function ArenaPanel() {
                   key={ch.cid.toString()}
                   challenge={ch}
                   isMine={isMine}
-                  canAccept={canUseSelected}
-                  busy={
-                    actions.busy === `accept:${ch.cid}` ||
-                    actions.busy === `cancel:${ch.cid}`
-                  }
-                  onAccept={() => {
-                    if (!canUseSelected || !selected) return;
-                    playImpact();
-                    actions.acceptChallenge(ch.cid, selected.id);
-                  }}
+                  selected={ch.cid === targetCid}
+                  busy={actions.busy === `cancel:${ch.cid}`}
+                  onSelect={() => setTargetCid(ch.cid)}
                   onCancel={() => actions.cancelChallenge(ch.cid)}
                 />
               );
