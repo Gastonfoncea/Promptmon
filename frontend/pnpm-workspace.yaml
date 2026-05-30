@@ -8,5 +8,6 @@ packages:
 # Esto evita que `pnpm install` falle con ERR_PNPM_IGNORED_BUILDS.
 allowBuilds:
   '@reown/appkit': true
+  esbuild: true
   sharp: true
   unrs-resolver: true
