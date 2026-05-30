@@ -88,6 +88,8 @@ function extractGlbUrl(task: TripoTaskData): string | null {
 export interface GenerateOptions {
   timeoutMs?: number;
   pollIntervalMs?: number;
+  /** Callback de progreso (0-100) en cada poll. Para streamear al frontend. */
+  onProgress?: (progress: number, status: string) => void;
 }
 
 /**
@@ -121,6 +123,8 @@ export async function generateCreature(
       `/task/${encodeURIComponent(task_id)}`,
       apiKey,
     );
+
+    opts.onProgress?.(task.progress ?? 0, task.status);
 
     if (task.status === "success") {
       const glbUrl = extractGlbUrl(task);
