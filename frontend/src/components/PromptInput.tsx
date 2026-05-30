@@ -1,8 +1,7 @@
+"use client";
+
 import { useState, useId, type FormEvent } from "react";
-import {
-  validatePrompt,
-  PROMPT_MAX_LENGTH,
-} from "./validatePrompt.js";
+import { validatePrompt, PROMPT_MAX_LENGTH } from "@/lib/validatePrompt";
 
 const DEFAULT_PLACEHOLDER =
   "a fire-breathing armored lizard, neon cyberpunk style";
@@ -10,17 +9,16 @@ const DEFAULT_PLACEHOLDER =
 export interface PromptInputProps {
   /**
    * Dispara la generación de la criatura a partir del prompt validado (ya trimmeado).
-   * DEBE ir contra Tripo del lado del servidor (API route), porque el cliente
-   * Tripo lee TRIPO_API_KEY del entorno y no puede correr en el browser.
-   * El componente await-ea esta promesa para el feedback de carga y muestra
-   * `error.message` si rechaza.
+   * Va contra `/api/generate` (server-side), porque Tripo lee TRIPO_API_KEY del
+   * entorno y no puede correr en el browser. El componente await-ea esta promesa
+   * para el feedback de carga y muestra `error.message` si rechaza.
    */
   onGenerate: (prompt: string) => Promise<void>;
   /** Texto del placeholder del textarea. */
   placeholder?: string;
   /** Deshabilita el input desde afuera (ej. wallet no conectada). */
   disabled?: boolean;
-  /** Clase CSS opcional para el contenedor (estilos los pone el scaffold de Dev3). */
+  /** Clase CSS opcional para el contenedor. */
   className?: string;
 }
 
@@ -29,8 +27,7 @@ export interface PromptInputProps {
  *
  * Responsabilidades: textarea con contador y límite de caracteres, bloqueo de
  * envío vacío/ inválido, feedback de carga mientras se genera y mensaje de error.
- * Está DESACOPLADO del cliente Tripo vía la prop `onGenerate`, así se monta en
- * el <Canvas>/layout del scaffold (PRO-19) sin exponer la API key en el browser.
+ * Desacoplado de Tripo vía la prop `onGenerate` (la generación es server-side).
  */
 export function PromptInput({
   onGenerate,
@@ -47,13 +44,12 @@ export function PromptInput({
 
   const validation = validatePrompt(value);
   const canSubmit = validation.valid && !isGenerating && !disabled;
-  // El contador avisa visualmente cuando quedan pocos / se pasó.
-  const counterTone =
+  const counterColor =
     validation.remaining < 0
-      ? "over"
+      ? "text-red-400"
       : validation.remaining <= 20
-        ? "low"
-        : "ok";
+        ? "text-amber-400"
+        : "text-white/40";
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -64,14 +60,23 @@ export function PromptInput({
     try {
       await onGenerate(validation.trimmed);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falló la generación. Probá de nuevo.");
+      setError(
+        err instanceof Error ? err.message : "Falló la generación. Probá de nuevo.",
+      );
     } finally {
       setIsGenerating(false);
     }
   }
 
   return (
-    <form className={className} onSubmit={handleSubmit} data-prompt-input="">
+    <form
+      className={
+        className ??
+        "flex flex-col gap-2 rounded-2xl border border-white/10 bg-black/40 p-4 backdrop-blur"
+      }
+      onSubmit={handleSubmit}
+      data-prompt-input=""
+    >
       <textarea
         aria-label="Descripción de tu criatura"
         placeholder={placeholder}
@@ -82,25 +87,35 @@ export function PromptInput({
         aria-invalid={validation.error !== null && value.length > 0}
         aria-describedby={`${counterId} ${error ? errorId : ""}`.trim()}
         onChange={(e) => setValue(e.target.value)}
+        className="w-full resize-none rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none focus:border-[#836EF9] disabled:opacity-50"
       />
 
-      <div data-prompt-meta="">
-        <span id={counterId} data-counter-tone={counterTone}>
+      <div className="flex items-center justify-between gap-3">
+        <span id={counterId} className={`text-xs tabular-nums ${counterColor}`}>
           {validation.remaining} caracteres restantes
         </span>
-        <button type="submit" disabled={!canSubmit}>
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="rounded-lg bg-[#836EF9] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6f5ae0] disabled:cursor-not-allowed disabled:opacity-40"
+        >
           {isGenerating ? "Generando…" : "Generar criatura"}
         </button>
       </div>
 
       {isGenerating && (
-        <p role="status" data-prompt-status="">
+        <p role="status" className="text-xs text-white/60" data-prompt-status="">
           Generando tu criatura… esto puede tardar ~1 minuto.
         </p>
       )}
 
       {error && (
-        <p id={errorId} role="alert" data-prompt-error="">
+        <p
+          id={errorId}
+          role="alert"
+          className="text-xs text-red-400"
+          data-prompt-error=""
+        >
           {error}
         </p>
       )}
