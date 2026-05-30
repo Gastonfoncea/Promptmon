@@ -211,14 +211,40 @@ export function BattleCinematic({ outcome, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#0a0614]">
+    <div className="fixed inset-0 z-50 bg-[#0a0614]">
+      {/* Canvas a PANTALLA COMPLETA (absoluto, no depende del flex layout) */}
+      <Canvas
+        camera={{ position: [0, 0.4, 5.5], fov: 50 }}
+        dpr={[1, 2]}
+        style={{ position: "absolute", inset: 0 }}
+      >
+        <color attach="background" args={["#0a0614"]} />
+        <Stars radius={50} depth={30} count={2000} factor={3} fade speed={1} />
+        <ModelErrorBoundary>
+          <BattleScene
+            winnerGlb={winner.glb}
+            loserGlb={loser.glb}
+            winnerColor={winnerColor}
+            loserColor={loserColor}
+          />
+        </ModelErrorBoundary>
+        <EffectComposer>
+          <Bloom
+            intensity={1.3}
+            luminanceThreshold={0.1}
+            luminanceSmoothing={0.9}
+            mipmapBlur
+          />
+        </EffectComposer>
+      </Canvas>
+
       {/* Flash en el impacto */}
       <div
         className="pointer-events-none absolute inset-0 z-10 transition-opacity duration-300"
         style={{ backgroundColor: winnerColor, opacity: impact ? 0.5 : 0 }}
       />
 
-      <div className="relative z-20 flex items-center justify-between px-6 py-4">
+      <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-4 text-sm">
           <span className="flex items-center gap-1.5 text-white/70">
             <ColorDot color={loserColor} /> #{outcome.loserId.toString()}
@@ -239,44 +265,21 @@ export function BattleCinematic({ outcome, onClose }: Props) {
         </button>
       </div>
 
-      <div className="relative flex-1">
-        <Canvas camera={{ position: [0, 0.4, 5.5], fov: 50 }} dpr={[1, 2]}>
-          <color attach="background" args={["#0a0614"]} />
-          <Stars radius={50} depth={30} count={2000} factor={3} fade speed={1} />
-          <ModelErrorBoundary>
-            <BattleScene
-              winnerGlb={winner.glb}
-              loserGlb={loser.glb}
-              winnerColor={winnerColor}
-              loserColor={loserColor}
-            />
-          </ModelErrorBoundary>
-          <EffectComposer>
-            <Bloom
-              intensity={1.3}
-              luminanceThreshold={0.1}
-              luminanceSmoothing={0.9}
-              mipmapBlur
-            />
-          </EffectComposer>
-        </Canvas>
-
-        {/* Contador de victorias del ganador, revelado en el impacto */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-10 flex flex-col items-center gap-1">
-          <div
-            className={`font-[family-name:var(--font-display)] text-7xl font-bold text-white transition-all duration-300 ${
-              impact ? "scale-125 text-[#a78bfa] opacity-100" : "scale-100 opacity-0"
-            }`}
-          >
-            {winner.wins} WINS
-          </div>
-          {impact && (
-            <div className="text-sm text-white/60">
-              #{outcome.winnerId.toString()} se quedó con #
-              {outcome.loserId.toString()}
-            </div>
-          )}
+      {/* Contador de victorias del ganador, revelado en el impacto */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-10 z-20 flex flex-col items-center gap-1">
+        <div
+          className={`font-[family-name:var(--font-display)] text-7xl font-bold text-white transition-all duration-300 ${
+            impact ? "scale-125 text-[#a78bfa] opacity-100" : "scale-100 opacity-0"
+          }`}
+        >
+          {winner.wins} WINS
         </div>
+        {impact && (
+          <div className="text-sm text-white/60">
+            #{outcome.winnerId.toString()} se quedó con #
+            {outcome.loserId.toString()}
+          </div>
+        )}
       </div>
     </div>
   );
