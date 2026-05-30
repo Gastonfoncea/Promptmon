@@ -37,7 +37,8 @@ export default function Home() {
       <section className="relative flex-1">
         {/* Canvas R3F (PRO-19). La criatura generada (PRO-16) se monta adentro. */}
         <CreatureCanvas>
-          {glbUrl && <CreatureModel glbUrl={glbUrl} />}
+          {/* key={glbUrl}: cada criatura nueva remonta y reinicia la animación de nacimiento (PRO-17). */}
+          {glbUrl && <CreatureModel key={glbUrl} glbUrl={glbUrl} />}
         </CreatureCanvas>
 
         {/* Overlay: input de prompt (PRO-15) abajo, centrado sobre el canvas. */}
