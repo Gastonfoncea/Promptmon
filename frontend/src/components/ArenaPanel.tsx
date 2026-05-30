@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAccount } from "wagmi";
 import { ChallengeCard } from "./ChallengeCard";
+import { ConquestOverlay } from "./ConquestOverlay";
 import { CreatureStats } from "./CreatureStats";
 import {
   useArenaActions,
@@ -35,26 +36,12 @@ export function ArenaPanel() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 p-6">
-      {/* Resultado de la última batalla */}
+      {/* Animación de conquista a pantalla completa (PRO-23, WOW #2) */}
       {actions.lastBattle && (
-        <div className="flex items-center justify-between rounded-2xl border border-[#836EF9]/50 bg-[#1a1033] px-5 py-4">
-          <div>
-            <div className="text-sm font-bold text-white">
-              ⚔️ Batalla resuelta
-            </div>
-            <div className="text-xs text-white/60">
-              Ganó #{actions.lastBattle.winnerId.toString()} — se quedó con #
-              {actions.lastBattle.loserId.toString()}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={actions.clearBattle}
-            className="text-xs text-white/50 hover:text-white"
-          >
-            cerrar
-          </button>
-        </div>
+        <ConquestOverlay
+          outcome={actions.lastBattle}
+          onClose={actions.clearBattle}
+        />
       )}
 
       {/* Mis criaturas + crear desafío */}
