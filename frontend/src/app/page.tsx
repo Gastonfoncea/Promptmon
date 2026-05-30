@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CreatureCanvas } from "@/components/CreatureCanvas";
 import { CreatureModel } from "@/components/CreatureModel";
+import { MintPanel } from "@/components/MintPanel";
 import { PromptInput } from "@/components/PromptInput";
 import { WalletStatus } from "@/components/WalletStatus";
 
@@ -43,15 +44,11 @@ export default function Home() {
 
         {/* Overlay: input de prompt (PRO-15) abajo, centrado sobre el canvas. */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 p-6">
+          {/* Una vez generada la criatura: panel de mint (PRO-21). */}
           {glbUrl && (
-            <a
-              href={glbUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="pointer-events-auto rounded-full bg-white/10 px-4 py-1 text-xs text-white/70 hover:bg-white/20"
-            >
-              ✅ criatura generada — ver .glb
-            </a>
+            <div className="pointer-events-auto w-full max-w-xl">
+              <MintPanel glbUrl={glbUrl} />
+            </div>
           )}
           <div className="pointer-events-auto w-full max-w-xl">
             <PromptInput onGenerate={handleGenerate} />
