@@ -12,8 +12,9 @@ export const MONAD_TESTNET_CHAIN_ID = 10143;
 /// Deploy tx: 0x605297cd7515297143160b8c6016b1e2cc4981a8c419f04430a25a5ec3fafd30 (block 35097963)
 export const PROMPTMON_ADDRESS = "0xB61Dc153eB4B149C5cb6Ed46FD67c62063311932" as const;
 
-/// Stablecoins aceptados (completar con las addresses reales de Monad testnet).
+/// Stablecoins aceptados en Monad testnet.
+/// mUSDC: mock propio (6 dec, mint() público tipo faucet) habilitado a 10 mUSDC.
 export const PAYMENT_TOKENS = {
-  USDC: "0x0000000000000000000000000000000000000000",
+  USDC: "0xD182ECE40977e5f8D91627399aA577Ae7b02fe97",
   USDT: "0x0000000000000000000000000000000000000000",
 } as const;
