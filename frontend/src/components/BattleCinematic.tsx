@@ -143,15 +143,16 @@ function BattleScene({
       winnerWrap.current.position.set(f.winner.x + winnerLunge, f.winner.y, 0);
       winnerWrap.current.scale.setScalar(f.winner.scale);
       winnerWrap.current.rotation.z = f.winner.tilt;
-      // No rota en su eje: las criaturas se encaran, no giran como calesita.
+      // Rota lento sobre su eje: así se ve la criatura desde todos los ángulos
+      // (los modelos de Tripo no nacen orientados de forma consistente).
+      winnerWrap.current.rotation.y += delta * 0.6;
     }
     if (loserWrap.current) {
       loserWrap.current.position.set(f.loser.x + loserLunge, f.loser.y, 0);
       loserWrap.current.scale.setScalar(Math.max(0.001, f.loser.scale));
       loserWrap.current.rotation.z = f.loser.tilt;
-      // Solo gira mientras es absorbido (la "muerte"), no durante la pelea.
-      loserWrap.current.rotation.y =
-        f.phase === "absorb" ? loserWrap.current.rotation.y + delta * 6 : 0;
+      // Rota lento durante la pelea; rápido mientras es absorbido (la "muerte").
+      loserWrap.current.rotation.y += delta * (f.phase === "absorb" ? 6 : 0.6);
       setOpacity(loser.object, f.loser.opacity);
     }
     if (glow.current) glow.current.intensity = f.winner.glow * 16;
