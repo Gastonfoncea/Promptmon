@@ -1,9 +1,9 @@
 "use client";
 
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useState } from "react";
 import { CreatureCanvas } from "@/components/CreatureCanvas";
 import { PromptInput } from "@/components/PromptInput";
+import { WalletStatus } from "@/components/WalletStatus";
 
 export default function Home() {
   // glbUrl de la última criatura generada. Por ahora solo lo mostramos;
@@ -30,7 +30,7 @@ export default function Home() {
         <h1 className="text-xl font-bold tracking-tight text-white">
           Prompt<span className="text-[#836EF9]">Mon</span>
         </h1>
-        <ConnectButton />
+        <WalletStatus />
       </header>
 
       <section className="relative flex-1">
