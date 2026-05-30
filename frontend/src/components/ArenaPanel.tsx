@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useAccount } from "wagmi";
+import { BattleCinematic } from "./BattleCinematic";
 import { ChallengeCard } from "./ChallengeCard";
-import { ConquestOverlay } from "./ConquestOverlay";
 import { CreatureStats } from "./CreatureStats";
 import { playImpact } from "@/lib/sfx";
 import {
@@ -37,9 +37,9 @@ export function ArenaPanel() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 p-6">
-      {/* Animación de conquista a pantalla completa (PRO-23, WOW #2) */}
+      {/* Secuencia de batalla cinematográfica a pantalla completa (PRO-32) */}
       {actions.lastBattle && (
-        <ConquestOverlay
+        <BattleCinematic
           outcome={actions.lastBattle}
           onClose={actions.clearBattle}
         />
