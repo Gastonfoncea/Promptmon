@@ -31,7 +31,7 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col">
+    <main className="flex h-dvh flex-col">
       <header className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-4">
           <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight text-white">
