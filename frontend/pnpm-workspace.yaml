@@ -1,7 +1,7 @@
+# Decisión explícita sobre los build scripts que pnpm gatea por seguridad.
+# true = se permite ejecutar el script (necesario para binarios nativos).
+# Esto evita que `pnpm install` falle con ERR_PNPM_IGNORED_BUILDS.
 allowBuilds:
-  '@reown/appkit': set this to true or false
-  sharp: set this to true or false
-  unrs-resolver: set this to true or false
-ignoredBuiltDependencies:
-  - sharp
-  - unrs-resolver
+  '@reown/appkit': true
+  sharp: true
+  unrs-resolver: true
