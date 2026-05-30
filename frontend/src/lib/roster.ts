@@ -19,6 +19,11 @@ export interface RosterEntry {
   preview: string | null;
   taskId: string | null;
   generatedAt: string | null;
+  /** tokenId on-chain una vez minteada (PRO-18 parte 2), o null/ausente si todavía no. */
+  tokenId?: string | null;
+  /** Hash de la tx de mint. */
+  mintTx?: string | null;
+  mintedAt?: string | null;
 }
 
 /** Todas las entradas del roster (incluidas las que falta generar). */
@@ -30,4 +35,9 @@ export const roster: RosterEntry[] = manifest as unknown as RosterEntry[];
  */
 export const readyRoster: RosterEntry[] = roster.filter(
   (creature): creature is RosterEntry & { glb: string } => creature.glb !== null,
+);
+
+/** Solo las criaturas ya minteadas on-chain (con `tokenId`). Para la arena/leaderboard. */
+export const mintedRoster: RosterEntry[] = roster.filter(
+  (creature) => creature.tokenId != null,
 );

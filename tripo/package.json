@@ -15,10 +15,14 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "gen": "tsx src/cli.ts",
-    "roster": "tsx src/roster.ts"
+    "roster": "tsx src/roster.ts",
+    "mint-roster": "tsx src/mint-roster.ts"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "viem": "^2.51.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
