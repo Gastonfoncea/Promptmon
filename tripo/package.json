@@ -14,7 +14,8 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "gen": "tsx src/cli.ts"
+    "gen": "tsx src/cli.ts",
+    "roster": "tsx src/roster.ts"
   },
   "engines": {
     "node": ">=20"

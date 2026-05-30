@@ -1,0 +1,92 @@
+[
+  {
+    "slug": "ember-drake",
+    "name": "Ember Drake",
+    "prompt": "a fire-breathing armored lizard, molten cracks glowing through obsidian scales, cinematic",
+    "glb": null,
+    "preview": null,
+    "taskId": null,
+    "generatedAt": null
+  },
+  {
+    "slug": "frost-warden",
+    "name": "Frost Warden",
+    "prompt": "an icy crystalline golem with glacier shards for armor, pale blue glow",
+    "glb": null,
+    "preview": null,
+    "taskId": null,
+    "generatedAt": null
+  },
+  {
+    "slug": "neon-serpent",
+    "name": "Neon Serpent",
+    "prompt": "a sleek cyberpunk snake with neon circuit patterns and chrome plating",
+    "glb": null,
+    "preview": null,
+    "taskId": null,
+    "generatedAt": null
+  },
+  {
+    "slug": "storm-griffin",
+    "name": "Storm Griffin",
+    "prompt": "a majestic griffin crackling with lightning, storm clouds around its wings",
+    "glb": null,
+    "preview": null,
+    "taskId": null,
+    "generatedAt": null
+  },
+  {
+    "slug": "abyss-jelly",
+    "name": "Abyss Jelly",
+    "prompt": "a bioluminescent deep-sea jellyfish creature, translucent body, glowing tendrils",
+    "glb": null,
+    "preview": null,
+    "taskId": null,
+    "generatedAt": null
+  },
+  {
+    "slug": "solar-phoenix",
+    "name": "Solar Phoenix",
+    "prompt": "a cosmic phoenix made of solar flares and golden plasma, radiant",
+    "glb": null,
+    "preview": null,
+    "taskId": null,
+    "generatedAt": null
+  },
+  {
+    "slug": "moss-treant",
+    "name": "Moss Treant",
+    "prompt": "a small ancient tree spirit covered in moss and tiny mushrooms, gentle",
+    "glb": null,
+    "preview": null,
+    "taskId": null,
+    "generatedAt": null
+  },
+  {
+    "slug": "void-stalker",
+    "name": "Void Stalker",
+    "prompt": "a shadowy panther-like creature wreathed in dark cosmic smoke, purple star specks",
+    "glb": null,
+    "preview": null,
+    "taskId": null,
+    "generatedAt": null
+  },
+  {
+    "slug": "crystal-mantis",
+    "name": "Crystal Mantis",
+    "prompt": "a praying mantis made of faceted amethyst crystal, sharp and elegant",
+    "glb": null,
+    "preview": null,
+    "taskId": null,
+    "generatedAt": null
+  },
+  {
+    "slug": "magma-toad",
+    "name": "Magma Toad",
+    "prompt": "a chunky toad with cracked volcanic rock skin and lava veins, grumpy",
+    "glb": null,
+    "preview": null,
+    "taskId": null,
+    "generatedAt": null
+  }
+]
