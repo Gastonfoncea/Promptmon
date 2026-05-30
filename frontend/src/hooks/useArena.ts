@@ -8,19 +8,6 @@ import type { Creature } from "@/hooks/useMintCreature";
 import { humanizeTxError } from "@/lib/txError";
 
 const abi = PROMPTMON_ABI as Abi;
-// Bloque del deploy (ver contract.ts): acota getLogs para no escanear toda la chain.
-const DEPLOY_BLOCK = BigInt(35097963);
-
-/** ERC-721 Transfer, para enumerar las criaturas de una address sin Enumerable. */
-const TRANSFER_EVENT = {
-  type: "event",
-  name: "Transfer",
-  inputs: [
-    { name: "from", type: "address", indexed: true },
-    { name: "to", type: "address", indexed: true },
-    { name: "tokenId", type: "uint256", indexed: true },
-  ],
-} as const;
 
 export interface OwnedCreature extends Creature {
   id: bigint;
@@ -54,37 +41,38 @@ export function useMyCreatures() {
     }
     setLoading(true);
     try {
-      const logs = await publicClient.getLogs({
+      // Enumeramos por nextId + ownerOf (igual que el leaderboard). Evita eth_getLogs,
+      // que el RPC público de Monad limita a 100 bloques por query.
+      const nextId = (await publicClient.readContract({
         address: PROMPTMON_ADDRESS,
-        event: TRANSFER_EVENT,
-        args: { to: address },
-        fromBlock: DEPLOY_BLOCK,
-        toBlock: "latest",
-      });
-      const ids = [
-        ...new Set(
-          logs.map((l) => (l.args as { tokenId: bigint }).tokenId.toString()),
-        ),
-      ].map((s) => BigInt(s));
+        abi,
+        functionName: "nextId",
+      })) as bigint;
+      const count = Number(nextId);
 
-      const owned: OwnedCreature[] = [];
-      for (const id of ids) {
-        const owner = (await publicClient.readContract({
-          address: PROMPTMON_ADDRESS,
-          abi,
-          functionName: "ownerOf",
-          args: [id],
-        })) as string;
-        if (owner.toLowerCase() !== address.toLowerCase()) continue;
-        const creature = (await publicClient.readContract({
-          address: PROMPTMON_ADDRESS,
-          abi,
-          functionName: "getCreature",
-          args: [id],
-        })) as Creature;
-        owned.push({ id, ...creature });
-      }
-      setCreatures(owned);
+      const all = await Promise.all(
+        Array.from({ length: count }, (_, i) => BigInt(i)).map(async (id) => {
+          const owner = (await publicClient
+            .readContract({
+              address: PROMPTMON_ADDRESS,
+              abi,
+              functionName: "ownerOf",
+              args: [id],
+            })
+            .catch(() => null)) as string | null;
+          if (!owner || owner.toLowerCase() !== address.toLowerCase()) {
+            return null;
+          }
+          const creature = (await publicClient.readContract({
+            address: PROMPTMON_ADDRESS,
+            abi,
+            functionName: "getCreature",
+            args: [id],
+          })) as Creature;
+          return { id, ...creature } satisfies OwnedCreature;
+        }),
+      );
+      setCreatures(all.filter((c): c is OwnedCreature => c !== null));
     } finally {
       setLoading(false);
     }
