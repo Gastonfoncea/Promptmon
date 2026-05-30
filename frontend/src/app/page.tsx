@@ -1,7 +1,7 @@
 "use client";
 
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { CreatureCanvas } from "@/components/CreatureCanvas";
+import { WalletStatus } from "@/components/WalletStatus";
 
 export default function Home() {
   return (
@@ -10,7 +10,7 @@ export default function Home() {
         <h1 className="text-xl font-bold tracking-tight text-white">
           Prompt<span className="text-[#836EF9]">Mon</span>
         </h1>
-        <ConnectButton />
+        <WalletStatus />
       </header>
 
       <section className="relative flex-1">
