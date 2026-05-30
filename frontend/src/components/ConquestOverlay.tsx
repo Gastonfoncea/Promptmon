@@ -1,7 +1,8 @@
 "use client";
 
-import { useGLTF } from "@react-three/drei";
+import { Stars, useGLTF } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
+import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Box3, type Group, type Mesh, type PointLight } from "three";
 import { usePublicClient } from "wagmi";
@@ -194,7 +195,7 @@ export function ConquestOverlay({ outcome, onClose }: Props) {
       />
 
       <div className="relative z-20 flex items-center justify-between px-6 py-4">
-        <span className="text-lg font-black uppercase tracking-widest text-[#a78bfa]">
+        <span className="font-[family-name:var(--font-display)] text-lg font-bold uppercase tracking-widest text-[#a78bfa]">
           ⚔️ Conquista
         </span>
         <button
@@ -208,13 +209,23 @@ export function ConquestOverlay({ outcome, onClose }: Props) {
 
       <div className="relative flex-1">
         <Canvas camera={{ position: [0, 0.5, 6], fov: 45 }} dpr={[1, 2]}>
+          <color attach="background" args={["#0a0614"]} />
+          <Stars radius={50} depth={30} count={1800} factor={3} fade speed={1} />
           <ConquestScene winnerGlb={winner.glb} loserGlb={loser.glb} />
+          <EffectComposer>
+            <Bloom
+              intensity={1.2}
+              luminanceThreshold={0.15}
+              luminanceSmoothing={0.9}
+              mipmapBlur
+            />
+          </EffectComposer>
         </Canvas>
 
         {/* Contador de victorias del ganador */}
         <div className="pointer-events-none absolute inset-x-0 bottom-10 flex flex-col items-center gap-1">
           <div
-            className={`text-6xl font-black text-white transition-transform duration-300 ${
+            className={`font-[family-name:var(--font-display)] text-7xl font-bold text-white transition-transform duration-300 ${
               impact ? "scale-125 text-[#a78bfa]" : "scale-100"
             }`}
           >

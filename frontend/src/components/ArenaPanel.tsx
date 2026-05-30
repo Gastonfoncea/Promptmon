@@ -5,6 +5,7 @@ import { useAccount } from "wagmi";
 import { ChallengeCard } from "./ChallengeCard";
 import { ConquestOverlay } from "./ConquestOverlay";
 import { CreatureStats } from "./CreatureStats";
+import { playImpact } from "@/lib/sfx";
 import {
   useArenaActions,
   useMyCreatures,
@@ -116,9 +117,11 @@ export function ArenaPanel() {
                     actions.busy === `accept:${ch.cid}` ||
                     actions.busy === `cancel:${ch.cid}`
                   }
-                  onAccept={() =>
-                    selected && actions.acceptChallenge(ch.cid, selected.id)
-                  }
+                  onAccept={() => {
+                    if (!selected) return;
+                    playImpact(); // SFX: golpe al iniciar la batalla (PRO-25)
+                    actions.acceptChallenge(ch.cid, selected.id);
+                  }}
                   onCancel={() => actions.cancelChallenge(ch.cid)}
                 />
               );
