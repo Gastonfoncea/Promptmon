@@ -29,6 +29,9 @@ import { PowerBlast } from "./PowerBlast";
 
 const abi = PROMPTMON_ABI as Abi;
 const SIZE = 1.7; // agranda los modelos para llenar la pantalla
+// Rotación fija en Y para que las criaturas encaren al frente (Tripo las exporta
+// mirando para atrás). Si quedan de costado, ajustar (±Math.PI/2); si de frente, 0.
+const FACING_Y = Math.PI;
 
 function setOpacity(object: Group, opacity: number) {
   object.traverse((child) => {
@@ -143,15 +146,18 @@ function BattleScene({
       winnerWrap.current.position.set(f.winner.x + winnerLunge, f.winner.y, 0);
       winnerWrap.current.scale.setScalar(f.winner.scale);
       winnerWrap.current.rotation.z = f.winner.tilt;
-      // No rota en su eje: las criaturas se encaran, no giran como calesita.
+      // Encara al frente, sin girar en su eje (no como calesita).
+      winnerWrap.current.rotation.y = FACING_Y;
     }
     if (loserWrap.current) {
       loserWrap.current.position.set(f.loser.x + loserLunge, f.loser.y, 0);
       loserWrap.current.scale.setScalar(Math.max(0.001, f.loser.scale));
       loserWrap.current.rotation.z = f.loser.tilt;
-      // Solo gira mientras es absorbido (la "muerte"), no durante la pelea.
+      // Encara al frente; solo gira mientras es absorbido (la "muerte").
       loserWrap.current.rotation.y =
-        f.phase === "absorb" ? loserWrap.current.rotation.y + delta * 6 : 0;
+        f.phase === "absorb"
+          ? loserWrap.current.rotation.y + delta * 6
+          : FACING_Y;
       setOpacity(loser.object, f.loser.opacity);
     }
     if (glow.current) glow.current.intensity = f.winner.glow * 16;
