@@ -73,7 +73,21 @@ export function Leaderboard() {
       </div>
 
       {loading ? (
-        <p className="py-12 text-center text-sm text-white/40">Cargando ranking…</p>
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-4 rounded-xl border border-white/5 px-4 py-3"
+            >
+              <div className="h-5 w-5 animate-pulse rounded bg-white/10" />
+              <div className="flex flex-1 flex-col gap-1.5">
+                <div className="h-3 w-28 animate-pulse rounded bg-white/10" />
+                <div className="h-2 w-20 animate-pulse rounded bg-white/5" />
+              </div>
+              <div className="h-6 w-8 animate-pulse rounded bg-white/10" />
+            </div>
+          ))}
+        </div>
       ) : entries.length === 0 ? (
         <p className="py-12 text-center text-sm text-white/40">
           Todavía no hay criaturas. Minteá la primera 👾

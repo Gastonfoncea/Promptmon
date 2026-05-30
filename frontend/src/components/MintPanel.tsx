@@ -2,8 +2,8 @@
 
 import { useAccount } from "wagmi";
 import { type MintStep, useMintCreature } from "@/hooks/useMintCreature";
+import { CreatureStats } from "./CreatureStats";
 
-/** Texto de cada paso del flujo, para el botón mientras procesa. */
 const STEP_LABEL: Record<MintStep, string> = {
   idle: "Mintear criatura",
   faucet: "Pidiendo mUSDC…",
@@ -14,12 +14,39 @@ const STEP_LABEL: Record<MintStep, string> = {
   error: "Reintentar mint",
 };
 
-const STAT_ROWS = [
-  ["ATK", "atk"],
-  ["DEF", "def"],
-  ["HP", "hp"],
-  ["SPD", "spd"],
-] as const;
+/** Pasos visibles del flujo de mint, para el stepper. */
+const STEPS: { key: MintStep; label: string }[] = [
+  { key: "faucet", label: "Fondos" },
+  { key: "approve", label: "Aprobar" },
+  { key: "minting", label: "Acuñar" },
+];
+const STEP_ORDER: MintStep[] = ["faucet", "approve", "minting", "reading", "done"];
+
+function Stepper({ step }: { step: MintStep }) {
+  const current = STEP_ORDER.indexOf(step);
+  return (
+    <div className="flex w-full items-center gap-1.5">
+      {STEPS.map((s, i) => {
+        const done = current > STEP_ORDER.indexOf(s.key);
+        const active = step === s.key;
+        return (
+          <div key={s.key} className="flex flex-1 flex-col items-center gap-1">
+            <div
+              className={`h-1 w-full rounded-full transition ${
+                done || active ? "bg-[#836EF9]" : "bg-white/10"
+              }`}
+            />
+            <span
+              className={`text-[10px] ${active ? "text-[#a78bfa]" : "text-white/40"}`}
+            >
+              {i + 1}. {s.label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function MintPanel({ glbUrl }: { glbUrl: string }) {
   const { isConnected } = useAccount();
@@ -31,43 +58,26 @@ export function MintPanel({ glbUrl }: { glbUrl: string }) {
     step === "minting" ||
     step === "reading";
 
-  // Ya minteada: mostramos la tarjeta de stats (lo que se ve en el pitch).
+  // Ya minteada: tarjeta de stats (el momento del pitch).
   if (step === "done" && result) {
     const { creature, tokenId } = result;
     return (
       <div className="w-full rounded-2xl border border-[#836EF9]/40 bg-[#1a1033]/80 p-4 backdrop-blur">
         <div className="mb-3 flex items-baseline justify-between">
-          <span className="text-sm font-semibold text-white">
+          <span className="font-[family-name:var(--font-display)] text-sm font-bold text-white">
             PromptMon #{tokenId.toString()}
           </span>
           <span className="text-xs text-white/50">
             lvl {creature.level} · {creature.wins} wins
           </span>
         </div>
-        <div className="grid grid-cols-4 gap-2">
-          {STAT_ROWS.map(([label, key]) => (
-            <div
-              key={key}
-              className="rounded-lg bg-white/5 px-2 py-2 text-center"
-            >
-              <div className="text-[10px] uppercase tracking-wide text-white/40">
-                {label}
-              </div>
-              <div className="text-lg font-bold text-[#a78bfa]">
-                {creature[key]}
-              </div>
-            </div>
-          ))}
-        </div>
-        <p className="mt-3 text-center text-[11px] text-white/40">
-          stats que ni vos elegís — salen del hash on-chain
-        </p>
+        <CreatureStats creature={creature} showTotal />
       </div>
     );
   }
 
   return (
-    <div className="flex w-full flex-col items-center gap-2">
+    <div className="flex w-full flex-col items-center gap-3">
       <button
         type="button"
         onClick={() => mint(glbUrl)}
@@ -80,9 +90,9 @@ export function MintPanel({ glbUrl }: { glbUrl: string }) {
         {isConnected ? STEP_LABEL[step] : "Conectá la wallet para mintear"}
       </button>
 
-      {error && (
-        <p className="text-center text-xs text-red-400">{error}</p>
-      )}
+      {isBusy && <Stepper step={step} />}
+
+      {error && <p className="text-center text-xs text-red-400">{error}</p>}
     </div>
   );
 }
