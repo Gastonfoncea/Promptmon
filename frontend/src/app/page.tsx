@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { CreatureCanvas } from "@/components/CreatureCanvas";
 import { CreatureModel } from "@/components/CreatureModel";
@@ -29,9 +30,17 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between px-6 py-4">
-        <h1 className="text-xl font-bold tracking-tight text-white">
-          Prompt<span className="text-[#836EF9]">Mon</span>
-        </h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold tracking-tight text-white">
+            Prompt<span className="text-[#836EF9]">Mon</span>
+          </h1>
+          <Link
+            href="/arena"
+            className="text-sm font-medium text-white/60 transition hover:text-[#a78bfa]"
+          >
+            Arena →
+          </Link>
+        </div>
         <WalletStatus />
       </header>
 
