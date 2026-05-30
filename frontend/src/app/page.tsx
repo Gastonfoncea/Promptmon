@@ -38,7 +38,13 @@ export default function Home() {
             href="/arena"
             className="text-sm font-medium text-white/60 transition hover:text-[#a78bfa]"
           >
-            Arena →
+            Arena
+          </Link>
+          <Link
+            href="/leaderboard"
+            className="text-sm font-medium text-white/60 transition hover:text-[#a78bfa]"
+          >
+            Leaderboard
           </Link>
         </div>
         <WalletStatus />
