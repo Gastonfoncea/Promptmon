@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CreatureCanvas } from "@/components/CreatureCanvas";
+import { CreatureModel } from "@/components/CreatureModel";
 import { PromptInput } from "@/components/PromptInput";
 import { WalletStatus } from "@/components/WalletStatus";
 
@@ -34,8 +35,10 @@ export default function Home() {
       </header>
 
       <section className="relative flex-1">
-        {/* Canvas R3F (PRO-19). Dev2 monta las criaturas acá dentro (PRO-16/17). */}
-        <CreatureCanvas />
+        {/* Canvas R3F (PRO-19). La criatura generada (PRO-16) se monta adentro. */}
+        <CreatureCanvas>
+          {glbUrl && <CreatureModel glbUrl={glbUrl} />}
+        </CreatureCanvas>
 
         {/* Overlay: input de prompt (PRO-15) abajo, centrado sobre el canvas. */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 p-6">
