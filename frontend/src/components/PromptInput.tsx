@@ -43,7 +43,8 @@ export function PromptInput({
   const counterId = useId();
 
   const validation = validatePrompt(value);
-  const canSubmit = validation.valid && !isGenerating && !disabled;
+  // Generación deshabilitada temporalmente: el botón queda siempre inactivo.
+  const canSubmit = false && validation.valid && !isGenerating && !disabled;
   const counterColor =
     validation.remaining < 0
       ? "text-red-400"
