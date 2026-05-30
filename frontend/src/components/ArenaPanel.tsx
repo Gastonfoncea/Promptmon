@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useAccount } from "wagmi";
+import { AllocatePanel } from "./AllocatePanel";
 import { BattleCinematic } from "./BattleCinematic";
 import { ChallengeCard } from "./ChallengeCard";
 import { MyCreatureCard } from "./MyCreatureCard";
@@ -98,6 +99,17 @@ export function ArenaPanel() {
               />
             ))}
           </div>
+        )}
+
+        {/* Asignar puntos ganados al subir de nivel (criatura seleccionada) */}
+        {selected && selected.unspent > 0 && (
+          <AllocatePanel
+            creature={selected}
+            busy={actions.busy === `allocate:${selected.id}`}
+            onAllocate={(atk, def, hp, spd) =>
+              actions.allocate(selected.id, atk, def, hp, spd)
+            }
+          />
         )}
 
         {creatures.length > 0 && (

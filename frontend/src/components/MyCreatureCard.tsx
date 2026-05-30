@@ -53,6 +53,11 @@ export function MyCreatureCard({ creature, selected, locked, onSelect }: Props) 
           ⚔️ En desafío
         </span>
       )}
+      {creature.unspent > 0 && (
+        <span className="absolute left-2 top-2 rounded-md bg-[#a78bfa]/25 px-2 py-0.5 text-[10px] font-semibold text-[#a78bfa]">
+          +{creature.unspent} pts
+        </span>
+      )}
       {selected && !locked && (
         <span className="text-center text-[11px] font-semibold text-[#a78bfa]">
           ✓ lista para pelear

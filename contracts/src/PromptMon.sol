@@ -56,6 +56,10 @@ contract PromptMon is ERC721, Ownable, ReentrancyGuard {
     ///         desafío con ella, mientras espera rival.
     mapping(uint256 id => bool) public locked;
 
+    /// @notice Puntos ganados al subir de nivel, sin asignar todavía. El dueño
+    ///         los reparte a las stats con allocate().
+    mapping(uint256 id => uint16) public unspentPoints;
+
     mapping(uint256 id => Creature) private _creatures;
 
     Challenge[] public challenges;
@@ -67,8 +71,12 @@ contract PromptMon is ERC721, Ownable, ReentrancyGuard {
         uint256 indexed winnerId, uint256 indexed loserId, address winner, address loser
     );
     event TreasurySet(address indexed treasury);
+    event PointsAwarded(uint256 indexed id, uint16 points, uint16 newLevel);
+    event StatsAllocated(uint256 indexed id, uint16 atk, uint16 def, uint16 hp, uint16 spd);
 
     error InvalidTreasury();
+    error NotEnoughPoints(uint16 have, uint256 want);
+    error NothingToAllocate();
     error EmptyGlbUrl();
     error BadStatTotal(uint256 sum); // la suma no da STAT_TOTAL
     error StatBelowMin(); // alguna stat < STAT_MIN
@@ -192,12 +200,52 @@ contract PromptMon is ERC721, Ownable, ReentrancyGuard {
         _transfer(loser, winner, loserId);
 
         Creature storage w = _creatures[winnerId];
+        uint16 pts = _pointsForLevel(w.level); // según el nivel ANTES de subir
         unchecked {
             w.level += 1;
             w.wins += 1;
         }
+        unspentPoints[winnerId] += pts;
 
         emit BattleResult(winnerId, loserId, winner, loser);
+        emit PointsAwarded(winnerId, pts, w.level);
+    }
+
+    /// @notice Puntos otorgados al pasar de `level` a `level+1`:
+    ///         1→2:10, 2→3:8, 3→4:6, 4→5:4, después 2 (piso).
+    function _pointsForLevel(uint16 level) internal pure returns (uint16) {
+        if (level >= 5) return 2;
+        return 12 - 2 * level; // level 1→10, 2→8, 3→6, 4→4
+    }
+
+    // --------------------------------------------------------------------- //
+    //                          Asignar puntos                              //
+    // --------------------------------------------------------------------- //
+
+    /// @notice Reparte puntos ganados a las stats de tu criatura. La suma de los
+    ///         incrementos debe ser <= unspentPoints[id]. No se puede mientras la
+    ///         criatura está en un desafío (locked).
+    function allocate(uint256 id, uint16 atkAdd, uint16 defAdd, uint16 hpAdd, uint16 spdAdd)
+        external
+        nonReentrant
+    {
+        if (ownerOf(id) != msg.sender) revert NotCreatureOwner(id);
+        if (locked[id]) revert CreatureLocked(id);
+
+        uint256 total = uint256(atkAdd) + defAdd + hpAdd + spdAdd;
+        if (total == 0) revert NothingToAllocate();
+
+        uint16 have = unspentPoints[id];
+        if (total > have) revert NotEnoughPoints(have, total);
+
+        Creature storage c = _creatures[id];
+        c.atk += atkAdd;
+        c.def += defAdd;
+        c.hp += hpAdd;
+        c.spd += spdAdd;
+        unspentPoints[id] = have - uint16(total);
+
+        emit StatsAllocated(id, c.atk, c.def, c.hp, c.spd);
     }
 
     // --------------------------------------------------------------------- //
