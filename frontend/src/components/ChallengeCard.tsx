@@ -3,6 +3,7 @@
 import { CreatureCanvas } from "./CreatureCanvas";
 import { CreatureModel } from "./CreatureModel";
 import { CreatureStats } from "./CreatureStats";
+import { ModelErrorBoundary } from "./ModelErrorBoundary";
 import type { OpenChallenge } from "@/hooks/useArena";
 
 function short(addr: string): string {
@@ -33,7 +34,9 @@ export function ChallengeCard({
     <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-[#140d28]/80 p-3">
       <div className="h-40 overflow-hidden rounded-xl bg-black/30">
         <CreatureCanvas>
-          <CreatureModel key={creature.glb} glbUrl={creature.glb} />
+          <ModelErrorBoundary key={creature.glb}>
+            <CreatureModel glbUrl={creature.glb} />
+          </ModelErrorBoundary>
         </CreatureCanvas>
       </div>
 

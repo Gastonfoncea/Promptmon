@@ -12,6 +12,8 @@ import type { BattleOutcome } from "@/hooks/useArena";
 import type { Creature } from "@/hooks/useMintCreature";
 import { CONQUEST, conquestFrame } from "@/lib/conquest";
 import { computeFitTransform } from "@/lib/fitModel";
+import { proxiedModelUrl } from "@/lib/modelUrl";
+import { ModelErrorBoundary } from "./ModelErrorBoundary";
 
 const abi = PROMPTMON_ABI as Abi;
 
@@ -29,7 +31,7 @@ function setOpacity(object: Group, opacity: number) {
 
 /** Carga un .glb y lo normaliza (centrado + escala uniforme). */
 function useNormalizedGlb(url: string) {
-  const { scene } = useGLTF(url);
+  const { scene } = useGLTF(proxiedModelUrl(url));
   return useMemo(() => {
     const object = scene.clone(true);
     const box = new Box3().setFromObject(object);
@@ -211,7 +213,9 @@ export function ConquestOverlay({ outcome, onClose }: Props) {
         <Canvas camera={{ position: [0, 0.5, 6], fov: 45 }} dpr={[1, 2]}>
           <color attach="background" args={["#0a0614"]} />
           <Stars radius={50} depth={30} count={1800} factor={3} fade speed={1} />
-          <ConquestScene winnerGlb={winner.glb} loserGlb={loser.glb} />
+          <ModelErrorBoundary>
+            <ConquestScene winnerGlb={winner.glb} loserGlb={loser.glb} />
+          </ModelErrorBoundary>
           <EffectComposer>
             <Bloom
               intensity={1.2}
