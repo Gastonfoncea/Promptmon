@@ -88,16 +88,19 @@ export function useLeaderboard() {
   );
 
   const { data, ...rest } = useReadContracts({
-    contracts,
+    // cast a any[]: el array dinámico no matchea el tipo estricto de wagmi, pero
+    // el shape (address/abi/functionName/args) es correcto en runtime.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    contracts: contracts as any[],
     query: { enabled: total > 0 },
   });
 
-  const rows = useMemo(() => {
-    if (!data) return [] as Array<{ id: number; creature: Creature }>;
-    return data
+  const rows = useMemo<Array<{ id: number; creature: Creature }>>(() => {
+    const results = (data ?? []) as Array<{ status: string; result?: unknown }>;
+    return results
       .map((r, i) =>
         r.status === "success"
-          ? { id: i, creature: r.result as unknown as Creature }
+          ? { id: i, creature: r.result as Creature }
           : null,
       )
       .filter((x): x is { id: number; creature: Creature } => x !== null)
