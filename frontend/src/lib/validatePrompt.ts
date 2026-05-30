@@ -4,6 +4,9 @@
  * Nota de diseño: el prompt es SOLO estética — los stats de la criatura salen
  * del contrato on-chain, así que NO validamos "poder" ni balance. Solo evitamos
  * prompts vacíos / triviales / demasiado largos para la API de Tripo.
+ *
+ * Pura y sin dependencias: se usa tanto en el cliente (UI) como en el server
+ * (API route /api/generate) para no confiar en la validación del browser.
  */
 
 /** Largo máximo permitido (caracteres). Tripo acepta prompts largos, pero acotamos por UX/costo. */

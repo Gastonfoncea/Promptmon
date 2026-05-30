@@ -1,3 +1,8 @@
+# Single-package "workspace": pnpm exige `packages` cuando este archivo existe,
+# si no `pnpm install` falla con "packages field missing or empty".
+packages:
+  - "."
+
 # Decisión explícita sobre los build scripts que pnpm gatea por seguridad.
 # true = se permite ejecutar el script (necesario para binarios nativos).
 # Esto evita que `pnpm install` falle con ERR_PNPM_IGNORED_BUILDS.

@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { validatePrompt, PROMPT_MAX_LENGTH, PROMPT_MIN_LENGTH } from "./validatePrompt.js";
+import {
+  validatePrompt,
+  PROMPT_MAX_LENGTH,
+  PROMPT_MIN_LENGTH,
+} from "./validatePrompt";
 
 describe("validatePrompt", () => {
   it("rechaza un prompt vacío", () => {
