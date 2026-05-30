@@ -204,6 +204,94 @@ contract PromptMonTest is Test {
         uint256 winnerId = (ownerA == alice) ? idA : idB;
         assertEq(pm.getCreature(winnerId).level, 2);
         assertEq(pm.getCreature(winnerId).wins, 1);
+        // al subir de nivel 1→2 gana 10 puntos sin asignar
+        assertEq(pm.unspentPoints(winnerId), 10);
+    }
+
+    // ------------------------ puntos + allocate ---------------------------- //
+
+    function test_allocate_addsToStatsAndConsumesPoints() public {
+        // alice gana → 10 puntos
+        vm.prank(alice);
+        uint256 idA = pm.mintCreature{value: FEE}("a", 85, 5, 5, 5);
+        vm.prank(bob);
+        uint256 idB = pm.mintCreature{value: FEE}("b", 5, 5, 85, 5);
+        vm.prank(alice);
+        uint256 cid = pm.createChallenge(idA);
+        vm.prank(bob);
+        pm.acceptChallenge(cid, idB);
+
+        address winner = pm.ownerOf(idA);
+        uint256 wid = (winner == alice) ? idA : idB;
+        vm.assertEq(pm.unspentPoints(wid), 10);
+
+        PromptMon.Creature memory before = pm.getCreature(wid);
+        vm.prank(winner);
+        pm.allocate(wid, 6, 2, 1, 1); // 10 puntos
+
+        PromptMon.Creature memory aft = pm.getCreature(wid);
+        assertEq(aft.atk, before.atk + 6);
+        assertEq(aft.def, before.def + 2);
+        assertEq(aft.hp, before.hp + 1);
+        assertEq(aft.spd, before.spd + 1);
+        assertEq(pm.unspentPoints(wid), 0);
+    }
+
+    function test_allocate_revertsIfOverBudget() public {
+        // dar puntos a alice
+        vm.prank(alice);
+        uint256 idA = pm.mintCreature{value: FEE}("a", 85, 5, 5, 5);
+        vm.prank(bob);
+        uint256 idB = pm.mintCreature{value: FEE}("b", 5, 5, 85, 5);
+        vm.prank(alice);
+        uint256 cid = pm.createChallenge(idA);
+        vm.prank(bob);
+        pm.acceptChallenge(cid, idB);
+        address winner = pm.ownerOf(idA);
+        uint256 wid = (winner == alice) ? idA : idB;
+
+        vm.prank(winner);
+        vm.expectRevert(abi.encodeWithSelector(PromptMon.NotEnoughPoints.selector, uint16(10), uint256(11)));
+        pm.allocate(wid, 11, 0, 0, 0);
+    }
+
+    function test_allocate_revertsIfNotOwner() public {
+        uint256 id = _mint(alice, "a");
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(PromptMon.NotCreatureOwner.selector, id));
+        pm.allocate(id, 1, 0, 0, 0);
+    }
+
+    function test_allocate_revertsIfNothing() public {
+        uint256 id = _mint(alice, "a");
+        vm.prank(alice);
+        vm.expectRevert(PromptMon.NothingToAllocate.selector);
+        pm.allocate(id, 0, 0, 0, 0);
+    }
+
+    function test_pointsDecreasePerLevel() public {
+        // simular varias victorias de la misma criatura: 10, 8, 6, 4, 2...
+        vm.prank(alice);
+        uint256 champ = pm.mintCreature{value: FEE}("champ", 85, 5, 5, 5);
+
+        uint16[5] memory expected = [uint16(10), 8, 6, 4, 2];
+        for (uint256 i = 0; i < 5; i++) {
+            vm.prank(bob);
+            uint256 prey = pm.mintCreature{value: FEE}(
+                string(abi.encodePacked("prey", vm.toString(i))), 5, 5, 85, 5
+            );
+            vm.prank(bob);
+            uint256 cid = pm.createChallenge(prey);
+            vm.prank(alice);
+            pm.acceptChallenge(cid, champ);
+            // champ debe ganar siempre (build fuerte) y acumular puntos
+            assertEq(pm.ownerOf(champ), alice, "champ deberia ganar");
+            // gastar los puntos para chequear el monto exacto de esta ronda
+            uint16 got = pm.unspentPoints(champ);
+            assertEq(got, expected[i], "puntos de la ronda");
+            vm.prank(alice);
+            pm.allocate(champ, got, 0, 0, 0);
+        }
     }
 
     function test_acceptChallenge_revertsOnClosed() public {

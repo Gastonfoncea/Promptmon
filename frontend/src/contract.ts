@@ -8,8 +8,8 @@ export const PROMPTMON_ABI = abi;
 export const MONAD_TESTNET_CHAIN_ID = 10143;
 
 /// Address del contrato desplegado en Monad testnet.
-/// v3: mint pagable 0.1 MON + stats elegidas por el jugador (pool 100, mín 5).
-export const PROMPTMON_ADDRESS = "0x6E6A771AA7D5d2f7c504DD90b002C1c2F4361274" as const;
+/// v4: mint 0.1 MON + stats elegidas + puntos al subir de nivel (allocate).
+export const PROMPTMON_ADDRESS = "0x99124e7a8dd6e58d78ddf80a82a8a8b4cfff2dd2" as const;
 
 /// Tarifa de mint en MON (wei). Debe coincidir con MINT_FEE del contrato.
 export const MINT_FEE_WEI = BigInt("100000000000000000"); // 0.1 MON

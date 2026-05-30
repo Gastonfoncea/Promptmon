@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAccount } from "wagmi";
+import { AllocatePanel } from "./AllocatePanel";
 import { BattleCinematic } from "./BattleCinematic";
 import { ChallengeCard } from "./ChallengeCard";
 import { CreatureStats } from "./CreatureStats";
@@ -74,9 +75,25 @@ export function ArenaPanel() {
                   </span>
                 </div>
                 <CreatureStats creature={c} />
+                {c.unspent > 0 && (
+                  <span className="mt-1 inline-block rounded bg-[#a78bfa]/20 px-1.5 py-0.5 text-[10px] font-semibold text-[#a78bfa]">
+                    +{c.unspent} pts
+                  </span>
+                )}
               </button>
             ))}
           </div>
+        )}
+
+        {/* Asignar puntos ganados a la criatura seleccionada */}
+        {selected && selected.unspent > 0 && (
+          <AllocatePanel
+            creature={selected}
+            busy={actions.busy === `allocate:${selected.id}`}
+            onAllocate={(atk, def, hp, spd) =>
+              actions.allocate(selected.id, atk, def, hp, spd)
+            }
+          />
         )}
 
         <button

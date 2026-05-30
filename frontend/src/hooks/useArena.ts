@@ -11,6 +11,7 @@ const abi = PROMPTMON_ABI as Abi;
 
 export interface OwnedCreature extends Creature {
   id: bigint;
+  unspent: number; // puntos sin asignar (ganados al subir de nivel)
 }
 
 export interface OpenChallenge {
@@ -63,13 +64,21 @@ export function useMyCreatures() {
           if (!owner || owner.toLowerCase() !== address.toLowerCase()) {
             return null;
           }
-          const creature = (await publicClient.readContract({
-            address: PROMPTMON_ADDRESS,
-            abi,
-            functionName: "getCreature",
-            args: [id],
-          })) as Creature;
-          return { id, ...creature } satisfies OwnedCreature;
+          const [creature, unspent] = await Promise.all([
+            publicClient.readContract({
+              address: PROMPTMON_ADDRESS,
+              abi,
+              functionName: "getCreature",
+              args: [id],
+            }) as Promise<Creature>,
+            publicClient.readContract({
+              address: PROMPTMON_ADDRESS,
+              abi,
+              functionName: "unspentPoints",
+              args: [id],
+            }) as Promise<bigint>,
+          ]);
+          return { id, ...creature, unspent: Number(unspent) } satisfies OwnedCreature;
         }),
       );
       setCreatures(all.filter((c): c is OwnedCreature => c !== null));
@@ -174,6 +183,12 @@ export function useArenaActions(onChange?: () => void) {
     [send],
   );
 
+  const allocate = useCallback(
+    (id: bigint, atk: number, def: number, hp: number, spd: number) =>
+      send(`allocate:${id}`, "allocate", [id, atk, def, hp, spd]),
+    [send],
+  );
+
   const acceptChallenge = useCallback(
     async (cid: bigint, myId: bigint) => {
       const receipt = await send(`accept:${cid}`, "acceptChallenge", [
@@ -201,5 +216,6 @@ export function useArenaActions(onChange?: () => void) {
     createChallenge,
     cancelChallenge,
     acceptChallenge,
+    allocate,
   };
 }
